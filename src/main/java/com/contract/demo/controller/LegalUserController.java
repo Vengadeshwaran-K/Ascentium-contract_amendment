@@ -1,5 +1,6 @@
 package com.contract.demo.controller;
 
+import com.contract.demo.dto.CreateContractRequest;
 import com.contract.demo.dto.LegalReviewRequest;
 import com.contract.demo.service.LegalUserService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,11 @@ import org.springframework.web.bind.annotation.*;
 public class LegalUserController {
 
     private final LegalUserService legalUserService;
+
+    @PostMapping("/contracts")
+    public ResponseEntity<?> createContract(@RequestBody CreateContractRequest request) {
+        return ResponseEntity.ok(legalUserService.createContract(request));
+    }
 
     @GetMapping("/contracts")
     public ResponseEntity<?> getContracts() {

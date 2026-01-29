@@ -101,15 +101,14 @@ public class SuperAdminService {
     // ================= AUDIT UTILITY =================
 
     private void audit(String action, String details) {
-
         AuditLog log = new AuditLog();
         log.setAction(action);
-        log.setActor(getCurrentUser());
         log.setDetails(details);
+        log.setActor("superadmin");
         log.setTimestamp(LocalDateTime.now());
-
         auditLogRepository.save(log);
     }
+
 
     private String getCurrentUser() {
         var auth = org.springframework.security.core.context.SecurityContextHolder

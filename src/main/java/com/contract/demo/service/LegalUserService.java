@@ -1,5 +1,6 @@
 package com.contract.demo.service;
 
+import com.contract.demo.dto.CreateContractRequest;
 import com.contract.demo.dto.LegalReviewRequest;
 import com.contract.demo.entity.Contract;
 import com.contract.demo.entity.ContractStatus;
@@ -21,6 +22,23 @@ public class LegalUserService {
     public List<Contract> getLegalContracts() {
         return contractRepository.findByAssignedRole("LEGAL_USER");
     }
+
+    public Contract createContract(CreateContractRequest request) {
+
+        Contract contract = new Contract();
+
+        contract.setContractName(request.getContractName());
+        contract.setClientId(request.getClientId());
+        contract.setEffectiveDate(request.getEffectiveDate());
+        contract.setContractAmount(request.getContractAmount());
+
+        contract.setStatus(ContractStatus.LEGAL_REVIEW);
+        contract.setAssignedRole("LEGAL_USER");
+        contract.setActive(true);
+
+        return contractRepository.save(contract);
+    }
+
 
     // Review and forward contract
     public Contract reviewContract(LegalReviewRequest request) {
