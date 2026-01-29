@@ -54,4 +54,12 @@ public class Contract {
     private String content;
 
     private String title;
+
+    @ManyToOne
+    @JoinColumn(name = "client_user_id")
+    private User clientUser;
+
+    @Column(length = 500)
+    private String clientRemarks;
+
 }

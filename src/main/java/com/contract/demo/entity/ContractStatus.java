@@ -6,6 +6,8 @@ public enum ContractStatus {
     FINANCE_REJECTED,
     CLIENT_APPROVED,
     COMPLETED,
+    CLIENT_REJECTED,
+    ACTIVE,
     REJECTED
 }
 
