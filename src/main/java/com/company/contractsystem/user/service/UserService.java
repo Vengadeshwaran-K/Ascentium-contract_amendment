@@ -7,6 +7,8 @@ import com.company.contractsystem.user.repository.RoleRepository;
 import com.company.contractsystem.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserService {
 
@@ -14,7 +16,7 @@ public class UserService {
     private final RoleRepository roleRepository;
 
     public UserService(UserRepository userRepository,
-                       RoleRepository roleRepository) {
+            RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
     }
@@ -35,5 +37,9 @@ public class UserService {
         user.setRole(role);
 
         return userRepository.save(user);
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }

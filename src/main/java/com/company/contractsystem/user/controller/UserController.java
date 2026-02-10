@@ -5,6 +5,8 @@ import com.company.contractsystem.user.entity.User;
 import com.company.contractsystem.user.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/admin/users")
 public class UserController {
@@ -18,5 +20,10 @@ public class UserController {
     @PostMapping("/register")
     public User createUser(@RequestBody CreateUserRequest request) {
         return userService.createUser(request);
+    }
+
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userService.getAllUsers();
     }
 }

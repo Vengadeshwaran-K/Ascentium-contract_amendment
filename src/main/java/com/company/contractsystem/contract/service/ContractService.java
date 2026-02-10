@@ -9,6 +9,7 @@ import com.company.contractsystem.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class ContractService {
@@ -17,7 +18,7 @@ public class ContractService {
     private final UserRepository userRepository;
 
     public ContractService(ContractRepository contractRepository,
-                           UserRepository userRepository) {
+            UserRepository userRepository) {
         this.contractRepository = contractRepository;
         this.userRepository = userRepository;
     }
@@ -71,5 +72,9 @@ public class ContractService {
         contract.setContractAmount(request.getContractAmount());
 
         return contractRepository.save(contract);
+    }
+
+    public List<Contract> getAllContracts() {
+        return contractRepository.findAll();
     }
 }
