@@ -76,4 +76,9 @@ public class ContractController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return service.getApprovalQueue(user);
     }
+
+    @GetMapping("/all-active")
+    public List<ContractVersion> getAllActiveContracts() {
+        return service.getAllActiveContracts();
+    }
 }

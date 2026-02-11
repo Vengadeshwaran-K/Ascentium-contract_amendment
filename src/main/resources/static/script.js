@@ -86,6 +86,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadApprovalQueue();
         } else if (targetTab === 'view-contracts') {
             loadMyContracts();
+        } else if (targetTab === 'all-contracts') {
+            loadAllActiveContracts();
         }
     });
 });
@@ -281,6 +283,7 @@ function applyRoleBasedAccess() {
     if (role === 'SUPER_ADMIN') {
         show('tab-create-user');
         show('tab-user-mapping');
+        show('tab-all-contracts');
         defaultTab = 'tab-create-user';
     } else if (role === 'LEGAL_USER') {
         show('tab-create-contract');
@@ -396,7 +399,13 @@ async function submitContract(id) {
 }
 
 async function approveContract(id) {
-    const remarks = prompt("Enter approval remarks (optional):");
+    const result = await showModal('Approve Contract', [
+        { id: 'remarks', label: 'Approval Remarks (optional)', type: 'text', placeholder: 'Enter remarks...' }
+    ]);
+
+    if (!result) return;
+    const { remarks } = result;
+
     try {
         const url = `${API_BASE}/contracts/${id}/approve${remarks ? `?remarks=${encodeURIComponent(remarks)}` : ''}`;
         const response = await authenticatedFetch(url, { method: 'POST' });
@@ -411,11 +420,14 @@ async function approveContract(id) {
     }
 }
 
-function promptReject(id) {
-    const remarks = prompt("Enter rejection remarks (required):");
-    if (remarks) {
-        rejectContract(id, remarks);
-    } else {
+async function promptReject(id) {
+    const result = await showModal('Reject Contract', [
+        { id: 'remarks', label: 'Rejection Remarks (required)', type: 'text', placeholder: 'Reason for rejection...', required: true }
+    ]);
+
+    if (result && result.remarks) {
+        rejectContract(id, result.remarks);
+    } else if (result) {
         showToast('Remarks are required for rejection', 'error');
     }
 }
@@ -436,21 +448,20 @@ async function rejectContract(id, remarks) {
 }
 
 async function editContract(id, currentName, currentAmount, currentDate) {
-    const name = prompt("Enter new Contract Name:", currentName);
-    if (name === null) return;
+    const result = await showModal('Edit Contract', [
+        { id: 'name', label: 'Contract Name', type: 'text', value: currentName, required: true },
+        { id: 'amount', label: 'Contract Amount', type: 'number', value: currentAmount, required: true },
+        { id: 'date', label: 'Effective Date', type: 'date', value: currentDate, required: true }
+    ]);
 
-    const amountStr = prompt("Enter new Contract Amount:", currentAmount);
-    if (amountStr === null) return;
-    const amount = parseFloat(amountStr);
-
-    const date = prompt("Enter new Effective Date (YYYY-MM-DD):", currentDate);
-    if (date === null) return;
+    if (!result) return;
+    const { name, amount, date } = result;
 
     const updateData = {
         contractName: name,
-        contractAmount: amount,
+        contractAmount: parseFloat(amount),
         effectiveDate: date,
-        clientId: 0 // Backend currently ignores this for updates
+        clientId: 0
     };
 
     try {
@@ -468,5 +479,104 @@ async function editContract(id, currentName, currentAmount, currentDate) {
         }
     } catch (error) {
         showToast(`Network error: ${error.message}`, 'error');
+    }
+}
+
+// Custom Modal Logic
+function showModal(title, inputs) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const container = document.getElementById('modal-inputs-container');
+        const btnOk = document.getElementById('modal-ok');
+        const btnCancel = document.getElementById('modal-cancel');
+        const btnClose = document.getElementById('modal-close');
+
+        modalTitle.textContent = title;
+        container.innerHTML = '';
+
+        inputs.forEach(input => {
+            const group = document.createElement('div');
+            group.className = 'modal-input-group';
+
+            const label = document.createElement('label');
+            label.textContent = input.label;
+            group.appendChild(label);
+
+            const el = document.createElement(input.type === 'textarea' ? 'textarea' : 'input');
+            el.id = `modal-field-${input.id}`;
+            if (input.type !== 'textarea') el.type = input.type;
+            el.placeholder = input.placeholder || '';
+            el.value = input.value || '';
+            if (input.required) el.required = true;
+
+            group.appendChild(el);
+            container.appendChild(group);
+        });
+
+        const closeModal = (result) => {
+            modal.classList.remove('show');
+            // Remove listeners to avoid leaks
+            btnOk.onclick = null;
+            btnCancel.onclick = null;
+            btnClose.onclick = null;
+            resolve(result);
+        };
+
+        btnOk.onclick = () => {
+            const data = {};
+            let valid = true;
+            inputs.forEach(input => {
+                const el = document.getElementById(`modal-field-${input.id}`);
+                if (input.required && !el.value) {
+                    el.style.borderColor = 'var(--danger)';
+                    valid = false;
+                } else {
+                    el.style.borderColor = 'var(--border-color)';
+                    data[input.id] = el.value;
+                }
+            });
+            if (valid) closeModal(data);
+        };
+
+        btnCancel.onclick = () => closeModal(null);
+        btnClose.onclick = () => closeModal(null);
+
+        modal.classList.add('show');
+    });
+}
+
+// Load All Active Contracts (Admin)
+async function loadAllActiveContracts() {
+    const listBody = document.getElementById('all-contracts-list-body');
+    if (!listBody) return;
+    listBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/contracts/all-active`);
+        if (!response.ok) throw new Error('Failed to fetch contracts');
+
+        const versions = await response.json();
+        listBody.innerHTML = '';
+
+        if (versions.length === 0) {
+            listBody.innerHTML = '<tr><td colspan="6" class="text-center">No active contracts found.</td></tr>';
+            return;
+        }
+
+        versions.forEach(v => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${v.contract.contractName}</td>
+                <td>V${v.versionNumber}</td>
+                <td>${v.contract.client.username}</td>
+                <td>$${v.contract.contractAmount.toLocaleString()}</td>
+                <td>${v.contract.effectiveDate}</td>
+                <td><span class="status-badge active">ACTIVE</span></td>
+            `;
+            listBody.appendChild(row);
+        });
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
     }
 }

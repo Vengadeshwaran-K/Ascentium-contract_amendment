@@ -163,4 +163,14 @@ public class ContractService {
                 })
                 .collect(Collectors.toList());
     }
+
+    public List<ContractVersion> getAllActiveContracts() {
+        return versionRepository.findAll().stream()
+                .filter(v -> v.getStatus() == ContractStatus.ACTIVE)
+                .collect(Collectors.groupingBy(v -> v.getContract().getId()))
+                .values().stream()
+                .map(list -> list.stream()
+                        .max((v1, v2) -> Integer.compare(v1.getVersionNumber(), v2.getVersionNumber())).get())
+                .collect(Collectors.toList());
+    }
 }
