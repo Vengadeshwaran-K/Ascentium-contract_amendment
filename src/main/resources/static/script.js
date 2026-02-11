@@ -224,28 +224,28 @@ document.getElementById('user-mapping-form').addEventListener('submit', async (e
     }
 });
 
-// Load Clients for Contract
+// Load Clients for Contract (Mapped to current Legal User)
 async function loadClientsForContract() {
     try {
-        const response = await authenticatedFetch(`${API_BASE}/admin/users`);
-        if (!response.ok) throw new Error('Failed to fetch users');
+        const response = await authenticatedFetch(`${API_BASE}/contracts/mapped-clients`);
+        if (!response.ok) throw new Error('Failed to fetch mapped clients');
 
-        const users = await response.json();
+        const clients = await response.json();
 
         // Populate client dropdown
         const select = document.getElementById('client-id');
-        select.innerHTML = '<option value="">Select Client</option>';
+        if (!select) return;
 
-        const clients = users.filter(user => user.role.name === 'CLIENT');
+        select.innerHTML = '<option value="">Select Client (Mapped)</option>';
 
         clients.forEach(client => {
             const option = document.createElement('option');
             option.value = client.id;
-            option.textContent = `${client.username} (${client.email})`;
+            option.textContent = `${client.displayName || client.username} (${client.email})`;
             select.appendChild(option);
         });
     } catch (error) {
-        showToast(`Error loading clients: ${error.message}`, 'error');
+        showToast(`Error loading mapped clients: ${error.message}`, 'error');
     }
 }
 
@@ -254,6 +254,12 @@ document.getElementById('create-contract-form').addEventListener('submit', async
     e.preventDefault();
 
     const formData = new FormData(e.target);
+    const contractAmount = parseFloat(formData.get('contractAmount'));
+    if (contractAmount < 0) {
+        showToast('u should not enter negative numbers', 'error');
+        return;
+    }
+
     const contractData = {
         contractName: formData.get('contractName'),
         clientId: parseInt(formData.get('clientId')),
@@ -426,7 +432,8 @@ async function submitContract(id) {
             loadMyContracts();
             loadDashboardStats();
         } else {
-            showToast('Failed to submit contract', 'error');
+            const error = await response.text();
+            showToast(`Error: ${error}`, 'error');
         }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -449,7 +456,8 @@ async function approveContract(id) {
             loadApprovalQueue();
             loadDashboardStats();
         } else {
-            showToast('Failed to approve contract', 'error');
+            const error = await response.text();
+            showToast(`Error: ${error}`, 'error');
         }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -477,7 +485,8 @@ async function rejectContract(id, remarks) {
             loadApprovalQueue();
             loadDashboardStats();
         } else {
-            showToast('Failed to reject contract', 'error');
+            const error = await response.text();
+            showToast(`Error: ${error}`, 'error');
         }
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
@@ -493,6 +502,11 @@ async function editContract(id, currentName, currentAmount, currentDate) {
 
     if (!result) return;
     const { name, amount, date } = result;
+
+    if (parseFloat(amount) < 0) {
+        showToast('u should not enter negative numbers', 'error');
+        return;
+    }
 
     const updateData = {
         contractName: name,

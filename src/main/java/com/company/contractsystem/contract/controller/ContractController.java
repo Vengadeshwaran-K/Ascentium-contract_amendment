@@ -94,4 +94,11 @@ public class ContractController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return service.getDashboardStats(user);
     }
+
+    @GetMapping("/mapped-clients")
+    public List<User> getMappedClients(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return service.getMappedClients(user);
+    }
 }

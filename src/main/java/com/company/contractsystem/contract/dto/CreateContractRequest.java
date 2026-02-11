@@ -11,10 +11,10 @@ import java.time.LocalDate;
 public class CreateContractRequest {
     @NotBlank
     private String contractName;
-    @NotNull
     private Long clientId;
     @NotNull
     private LocalDate effectiveDate;
     @NotNull
+    @jakarta.validation.constraints.Min(0)
     private BigDecimal contractAmount;
 }

@@ -50,18 +50,8 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             window.location.href = '/dashboard.html';
         } else {
             // Handle error responses
-            let errorMsg = 'Invalid credentials. Please try again.';
-
-            try {
-                const errorData = await response.text();
-                if (errorData) {
-                    errorMsg = errorData;
-                }
-            } catch (e) {
-                // Use default error message
-            }
-
-            showError(errorMsg);
+            const errorMsg = await response.text();
+            showError(errorMsg || 'Invalid credentials. Please try again.');
             resetButton();
         }
     } catch (error) {

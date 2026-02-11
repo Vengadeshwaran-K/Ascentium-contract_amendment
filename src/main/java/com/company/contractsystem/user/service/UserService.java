@@ -38,6 +38,13 @@ public class UserService {
         Role role = roleRepository.findByName(request.role)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
+        if (role.getName() == com.company.contractsystem.enums.RoleType.SUPER_ADMIN) {
+            if (userRepository.findAll().stream()
+                    .anyMatch(u -> u.getRole().getName() == com.company.contractsystem.enums.RoleType.SUPER_ADMIN)) {
+                throw new RuntimeException("A Super Admin already exists. Only one Super Admin is allowed.");
+            }
+        }
+
         User user = new User();
         user.setUsername(request.username);
         user.setEmail(request.email);

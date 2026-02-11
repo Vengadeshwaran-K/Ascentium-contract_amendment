@@ -30,8 +30,16 @@ public class SecurityConfig {
                                                 .authenticationEntryPoint((request, response, authException) -> {
                                                         response.setStatus(
                                                                         jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                                                        response.setContentType("application/json");
                                                         response.getWriter().write(
-                                                                        "Unauthorized: " + authException.getMessage());
+                                                                        "{\"message\": \"Your session has expired or is invalid. Please login again.\"}");
+                                                })
+                                                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                                                        response.setStatus(
+                                                                        jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN);
+                                                        response.setContentType("application/json");
+                                                        response.getWriter().write(
+                                                                        "{\"message\": \"You do not have permission to perform this action.\"}");
                                                 }))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(

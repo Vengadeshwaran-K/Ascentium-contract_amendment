@@ -47,8 +47,27 @@ public class ContractService {
 
     @Transactional
     public Contract create(CreateContractRequest request, User creator) {
+        // Fix Approval Mapping: Validate that the legal user has a mapping for the
+        // selected client
+        List<com.company.contractsystem.approval.entity.ApprovalMapping> mappings = mappingRepository
+                .findByLegalUser(creator);
+        if (mappings.isEmpty()) {
+            throw new RuntimeException(
+                    "No approval mapping found for you. Please contact Admin to setup your workflow mapping before creating contracts.");
+        }
+
         User client = userRepository.findById(request.getClientId())
                 .orElseThrow(() -> new RuntimeException("Client not found"));
+
+        boolean hasMapping = mappings.stream().anyMatch(m -> m.getClientUser().getId().equals(client.getId()));
+        if (!hasMapping) {
+            throw new RuntimeException("You do not have an approval mapping for this client. Please contact Admin.");
+        }
+
+        if (request.getContractAmount() != null
+                && request.getContractAmount().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("u should not enter negative numbers");
+        }
 
         Contract contract = new Contract();
         contract.setContractName(request.getContractName());
@@ -76,9 +95,16 @@ public class ContractService {
             throw new RuntimeException("Contract cannot be submitted in its current state");
         }
 
-        if (currentUser.getRole().getName() == com.company.contractsystem.enums.RoleType.LEGAL_USER) {
+        if (currentUser.getRole().getName() == RoleType.LEGAL_USER) {
+            // Fix Approval Mapping: Ensure mapping exists before submitting
+            List<com.company.contractsystem.approval.entity.ApprovalMapping> mappings = mappingRepository
+                    .findByLegalUser(currentUser);
+            if (mappings.isEmpty()) {
+                throw new RuntimeException(
+                        "No approval mapping found for you. Please contact Admin to map your workflow.");
+            }
             latest.setStatus(ContractStatus.PENDING_FINANCE);
-        } else if (currentUser.getRole().getName() == com.company.contractsystem.enums.RoleType.FINANCE_REVIEWER) {
+        } else if (currentUser.getRole().getName() == RoleType.FINANCE_REVIEWER) {
             latest.setStatus(ContractStatus.PENDING_CLIENT);
         } else {
             throw new RuntimeException("Only Legal Users or Finance Reviewers can submit contracts");
@@ -125,11 +151,8 @@ public class ContractService {
             versionRepository.save(latest);
 
             // Find the original legal user (who created V1)
-            User legalUser = versionRepository.findAll().stream()
-                    .filter(v -> v.getContract().getId().equals(latest.getContract().getId()))
-                    .filter(v -> v.getVersionNumber() == 1)
-                    .findFirst()
-                    .map(v -> v.getCreator())
+            User legalUser = versionRepository.findByContractIdAndVersionNumber(latest.getContract().getId(), 1)
+                    .map(ContractVersion::getCreator)
                     .orElse(latest.getCreator());
 
             // Create a NEW version for Legal to fix
@@ -149,16 +172,18 @@ public class ContractService {
 
             // Find the mapped Finance Reviewer for this contract
             // We look at the version 1 creator to find the mapping
-            User legalUser = versionRepository.findAll().stream()
-                    .filter(v -> v.getContract().getId().equals(latest.getContract().getId()))
-                    .filter(v -> v.getVersionNumber() == 1)
-                    .findFirst()
-                    .map(v -> v.getCreator())
+            User legalUser = versionRepository.findByContractIdAndVersionNumber(latest.getContract().getId(), 1)
+                    .map(ContractVersion::getCreator)
                     .orElse(latest.getCreator());
 
-            User financeUser = mappingRepository.findByLegalUser(legalUser)
+            List<com.company.contractsystem.approval.entity.ApprovalMapping> mappings = mappingRepository
+                    .findByLegalUser(legalUser);
+            User financeUser = mappings.stream()
+                    .filter(m -> m.getClientUser().getId().equals(latest.getContract().getClient().getId()))
                     .map(m -> m.getFinanceUser())
-                    .orElseThrow(() -> new RuntimeException("No Finance Reviewer mapped to this contract's creator"));
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException(
+                            "No Finance Reviewer mapped to this contract's creator and client"));
 
             // Create a NEW version for Finance to fix
             versionService.createNewVersion(latest.getContract(),
@@ -176,18 +201,23 @@ public class ContractService {
 
     @Transactional(readOnly = true)
     public List<ContractVersion> getMyContracts(User user) {
-        // Only show latest versions where the user is the current responsible party
-        // (creator)
-        // and the contract is not yet active or submitted.
+        // First group by contract to find the true latest version of each contract
         return versionRepository.findAll().stream()
                 .collect(Collectors.groupingBy(v -> v.getContract().getId()))
                 .values().stream()
                 .map(list -> list.stream()
-                        .max((v1, v2) -> Integer.compare(v1.getVersionNumber(), v2.getVersionNumber())).get())
-                .filter(v -> v.getCreator().getId().equals(user.getId()))
-                .filter(v -> v.getStatus() == ContractStatus.DRAFT ||
-                        v.getStatus() == ContractStatus.REJECTED_BY_FINANCE ||
-                        v.getStatus() == ContractStatus.REJECTED_BY_CLIENT)
+                        .max((v1, v2) -> Integer.compare(v1.getVersionNumber(), v2.getVersionNumber()))
+                        .orElse(null))
+                .filter(v -> v != null && v.getCreator().getId().equals(user.getId()))
+                .filter(v -> {
+                    if (user.getRole().getName() == RoleType.LEGAL_USER) {
+                        return v.getStatus() == ContractStatus.DRAFT ||
+                                v.getStatus() == ContractStatus.REJECTED_BY_FINANCE;
+                    } else if (user.getRole().getName() == RoleType.FINANCE_REVIEWER) {
+                        return v.getStatus() == ContractStatus.REJECTED_BY_CLIENT;
+                    }
+                    return false;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -198,8 +228,14 @@ public class ContractService {
 
         ContractVersion latest = versionService.findLatestVersion(id);
         if (latest == null || (latest.getStatus() != ContractStatus.DRAFT &&
-                !latest.getStatus().toString().startsWith("REJECTED"))) {
+                latest.getStatus() != ContractStatus.REJECTED_BY_FINANCE &&
+                latest.getStatus() != ContractStatus.REJECTED_BY_CLIENT)) {
             throw new RuntimeException("Contract can only be updated in DRAFT or REJECTED state");
+        }
+
+        if (request.getContractAmount() != null
+                && request.getContractAmount().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("u should not enter negative numbers");
         }
 
         contract.setContractName(request.getContractName());
@@ -214,13 +250,13 @@ public class ContractService {
 
     @Transactional(readOnly = true)
     public List<ContractVersion> getApprovalQueue(User user) {
-        return versionRepository.findAll().stream()
+        List<ContractStatus> pendingStatuses = List.of(ContractStatus.PENDING_FINANCE, ContractStatus.PENDING_CLIENT);
+        return versionRepository.findByStatusIn(pendingStatuses).stream()
                 .filter(v -> {
                     if (v.getStatus() == ContractStatus.PENDING_FINANCE) {
-                        // Check if current user is the mapped finance reviewer for the creator
-                        return mappingRepository.findByLegalUser(v.getCreator())
-                                .map(m -> m.getFinanceUser().getId().equals(user.getId()))
-                                .orElse(false);
+                        // Check if current user is one of the mapped finance reviewers for the creator
+                        return mappingRepository.findByLegalUser(v.getCreator()).stream()
+                                .anyMatch(m -> m.getFinanceUser().getId().equals(user.getId()));
                     } else if (v.getStatus() == ContractStatus.PENDING_CLIENT) {
                         // Check if current user is the client of the contract
                         return v.getContract().getClient().getId().equals(user.getId());
@@ -239,8 +275,7 @@ public class ContractService {
             return List.of();
         }
 
-        return versionRepository.findAll().stream()
-                .filter(v -> v.getStatus() == ContractStatus.ACTIVE)
+        return versionRepository.findByStatusIn(List.of(ContractStatus.ACTIVE)).stream()
                 .filter(v -> {
                     if (role == RoleType.SUPER_ADMIN) {
                         return true;
@@ -291,9 +326,8 @@ public class ContractService {
                     .filter(v -> v.getStatus() == ContractStatus.PENDING_FINANCE).count());
             counters.put("Approved", myContracts.stream()
                     .filter(v -> v.getStatus() == ContractStatus.ACTIVE).count());
-            counters.put("Rejected", myContracts.stream()
-                    .filter(v -> v.getStatus() == ContractStatus.REJECTED_BY_FINANCE
-                            || v.getStatus() == ContractStatus.REJECTED_BY_CLIENT)
+            counters.put("Rejected by Finance", myContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.REJECTED_BY_FINANCE)
                     .count());
         } else if (role == RoleType.FINANCE_REVIEWER) {
             List<ContractVersion> mappedContracts = allLatest.stream()
@@ -305,9 +339,8 @@ public class ContractService {
                                 .findFirst().map(av -> av.getCreator()).orElse(null);
                         if (creator == null)
                             return false;
-                        return mappingRepository.findByLegalUser(creator)
-                                .map(m -> m.getFinanceUser().getId().equals(user.getId()))
-                                .orElse(false);
+                        return mappingRepository.findByLegalUser(creator).stream()
+                                .anyMatch(m -> m.getFinanceUser().getId().equals(user.getId()));
                     }).collect(Collectors.toList());
 
             counters.put("Pending My Review", mappedContracts.stream()
@@ -316,8 +349,12 @@ public class ContractService {
                     .filter(v -> v.getStatus() == ContractStatus.PENDING_CLIENT
                             || v.getStatus() == ContractStatus.ACTIVE)
                     .count());
-            counters.put("Rejected by Me", mappedContracts.stream()
+            counters.put("Rejected by Me (to Legal)", mappedContracts.stream()
                     .filter(v -> v.getStatus() == ContractStatus.REJECTED_BY_FINANCE).count());
+            counters.put("Rejected by Client (Fix required)", mappedContracts.stream()
+                    .filter(v -> v.getCreator().getId().equals(user.getId())
+                            && v.getStatus() == ContractStatus.REJECTED_BY_CLIENT)
+                    .count());
         } else if (role == RoleType.CLIENT) {
             List<ContractVersion> myClientContracts = allLatest.stream()
                     .filter(v -> v.getContract().getClient().getId().equals(user.getId()))
@@ -335,5 +372,13 @@ public class ContractService {
                 .counters(counters)
                 .role(role.toString())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getMappedClients(User legalUser) {
+        return mappingRepository.findByLegalUser(legalUser).stream()
+                .map(com.company.contractsystem.approval.entity.ApprovalMapping::getClientUser)
+                .distinct()
+                .collect(Collectors.toList());
     }
 }
