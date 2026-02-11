@@ -52,11 +52,19 @@ async function authenticatedFetch(url, options = {}) {
     // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {
         const errorText = await response.text();
-        console.error('Unauthorized request:', url, 'Response:', errorText);
+        console.error('Unauthorized (401) at:', url, 'details:', errorText);
         localStorage.removeItem('authToken');
         localStorage.removeItem('username');
         window.location.href = '/login.html';
         throw new Error('Session expired. Please login again.');
+    }
+
+    // Handle 403 Forbidden - logged in but no permission
+    if (response.status === 403) {
+        const errorText = await response.text();
+        console.error('Forbidden (403) at:', url, 'details:', errorText);
+        showToast('You do not have permission for this action', 'error');
+        throw new Error('Access denied');
     }
 
     return response;
@@ -270,8 +278,8 @@ function applyRoleBasedAccess() {
     console.log('Applying access for role:', role);
 
     // Default: Hide everything
-    const allTabs = ['tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts'];
-    const allSections = ['create-user', 'user-mapping', 'create-contract', 'approval-queue', 'view-contracts'];
+    const allTabs = ['tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts', 'tab-all-contracts'];
+    const allSections = ['create-user', 'user-mapping', 'create-contract', 'approval-queue', 'view-contracts', 'all-contracts'];
 
     allTabs.forEach(id => {
         const el = document.getElementById(id);
@@ -280,19 +288,24 @@ function applyRoleBasedAccess() {
 
     // Show based on role
     let defaultTab = '';
+
     if (role === 'SUPER_ADMIN') {
         show('tab-create-user');
         show('tab-user-mapping');
         show('tab-all-contracts');
-        defaultTab = 'tab-create-user';
+        defaultTab = 'tab-all-contracts';
     } else if (role === 'LEGAL_USER') {
         show('tab-create-contract');
         show('tab-view-contracts');
         defaultTab = 'tab-create-contract';
-    } else if (role === 'FINANCE_REVIEWER' || role === 'CLIENT') {
+    } else if (role === 'FINANCE_REVIEWER') {
         show('tab-approval-queue');
         show('tab-view-contracts');
         defaultTab = 'tab-approval-queue';
+    } else if (role === 'CLIENT') {
+        show('tab-approval-queue');
+        show('tab-all-contracts');
+        defaultTab = 'tab-all-contracts';
     }
 
     // Set default active tab if current one is hidden
@@ -566,12 +579,18 @@ async function loadAllActiveContracts() {
 
         versions.forEach(v => {
             const row = document.createElement('tr');
+            const contractName = v.contract ? v.contract.contractName : 'N/A';
+            const clientName = (v.contract && v.contract.client) ? v.contract.client.username : 'N/A';
+            const amount = (v.contract && v.contract.contractAmount) ?
+                `$${v.contract.contractAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
+            const date = (v.contract && v.contract.effectiveDate) ? v.contract.effectiveDate : '-';
+
             row.innerHTML = `
-                <td>${v.contract.contractName}</td>
+                <td>${contractName}</td>
                 <td>V${v.versionNumber}</td>
-                <td>${v.contract.client.username}</td>
-                <td>$${v.contract.contractAmount.toLocaleString()}</td>
-                <td>${v.contract.effectiveDate}</td>
+                <td>${clientName}</td>
+                <td>${amount}</td>
+                <td>${date}</td>
                 <td><span class="status-badge active">ACTIVE</span></td>
             `;
             listBody.appendChild(row);

@@ -42,6 +42,7 @@ public class SecurityConfig {
                                                                 new AntPathRequestMatcher("/script.js"),
                                                                 new AntPathRequestMatcher("/style.css"),
                                                                 new AntPathRequestMatcher("/"),
+                                                                new AntPathRequestMatcher("/error"),
                                                                 new AntPathRequestMatcher("/index.html"))
                                                 .permitAll()
                                                 .requestMatchers(new AntPathRequestMatcher("/admin/users"))

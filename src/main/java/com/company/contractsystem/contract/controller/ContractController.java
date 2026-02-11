@@ -40,8 +40,10 @@ public class ContractController {
     }
 
     @PostMapping("/{id}/submit")
-    public ResponseEntity<?> submit(@PathVariable Long id) {
-        service.submit(id);
+    public ResponseEntity<?> submit(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        service.submit(id, user);
         return ResponseEntity.ok().build();
     }
 
@@ -78,7 +80,9 @@ public class ContractController {
     }
 
     @GetMapping("/all-active")
-    public List<ContractVersion> getAllActiveContracts() {
-        return service.getAllActiveContracts();
+    public List<ContractVersion> getAllActiveContracts(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return service.getAllActiveContracts(user);
     }
 }
