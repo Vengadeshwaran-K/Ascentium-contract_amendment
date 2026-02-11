@@ -254,4 +254,45 @@ document.getElementById('create-contract-form').addEventListener('submit', async
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Contract Management Dashboard loaded');
+    applyRoleBasedAccess();
 });
+
+function applyRoleBasedAccess() {
+    const role = localStorage.getItem('role');
+    console.log('Applying access for role:', role);
+
+    // Default: Hide everything
+    const allTabs = ['tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts'];
+    const allSections = ['create-user', 'user-mapping', 'create-contract', 'approval-queue', 'view-contracts'];
+
+    allTabs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    // Show based on role
+    let defaultTab = '';
+    if (role === 'SUPER_ADMIN') {
+        show('tab-create-user');
+        show('tab-user-mapping');
+        defaultTab = 'tab-create-user';
+    } else if (role === 'LEGAL_USER') {
+        show('tab-create-contract');
+        show('tab-view-contracts');
+        defaultTab = 'tab-create-contract';
+    } else if (role === 'FINANCE_REVIEWER' || role === 'CLIENT') {
+        show('tab-approval-queue');
+        show('tab-view-contracts');
+        defaultTab = 'tab-approval-queue';
+    }
+
+    // Set default active tab if current one is hidden
+    if (defaultTab) {
+        document.getElementById(defaultTab).click();
+    }
+}
+
+function show(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'flex';
+}

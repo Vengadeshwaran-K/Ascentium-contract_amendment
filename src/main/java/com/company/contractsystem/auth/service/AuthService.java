@@ -31,6 +31,6 @@ public class AuthService {
         }
 
         String token = jwtConfig.generateToken(user.getUsername());
-        return new LoginResponse(token);
+        return new LoginResponse(token, user.getRole().getName().toString());
     }
 }

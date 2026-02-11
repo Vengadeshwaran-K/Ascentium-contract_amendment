@@ -44,6 +44,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             // Store token in localStorage
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('username', username);
+            localStorage.setItem('role', data.role);
 
             // Redirect to dashboard
             window.location.href = '/dashboard.html';

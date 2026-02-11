@@ -26,7 +26,7 @@
         </header>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-tab="create-user">
+            <button class="tab-btn active" data-tab="create-user" id="tab-create-user">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                     <circle cx="8.5" cy="7" r="4"></circle>
@@ -35,7 +35,7 @@
                 </svg>
                 Create User
             </button>
-            <button class="tab-btn" data-tab="user-mapping">
+            <button class="tab-btn" data-tab="user-mapping" id="tab-user-mapping">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                     <circle cx="9" cy="7" r="4"></circle>
@@ -44,7 +44,7 @@
                 </svg>
                 User Mapping
             </button>
-            <button class="tab-btn" data-tab="create-contract">
+            <button class="tab-btn" data-tab="create-contract" id="tab-create-contract">
                 <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -52,6 +52,20 @@
                     <line x1="9" y1="15" x2="15" y2="15"></line>
                 </svg>
                 Create Contract
+            </button>
+            <button class="tab-btn" data-tab="approval-queue" id="tab-approval-queue">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                </svg>
+                Approval Queue
+            </button>
+            <button class="tab-btn" data-tab="view-contracts" id="tab-view-contracts">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                My Contracts
             </button>
         </nav>
 
@@ -163,6 +177,26 @@
                             Create Contract
                         </button>
                     </form>
+                </div>
+            </section>
+            <!-- Approval Queue Tab -->
+            <section id="approval-queue" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">Contracts Pending My Approval</h2>
+                    <div id="pending-approvals-list" class="placeholder-content">
+                        <p>No contracts pending approval at the moment.</p>
+                        <p class="text-hint">Finance Reviewers and Clients can see their assigned contracts here.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- View Contracts Tab -->
+            <section id="view-contracts" class="tab-content">
+                <div class="card">
+                    <h2 class="card-title">My Contracts</h2>
+                    <div id="contracts-list" class="placeholder-content">
+                        <p>No contracts found.</p>
+                    </div>
                 </div>
             </section>
         </main>
