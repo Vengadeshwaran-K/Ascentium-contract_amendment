@@ -5,6 +5,7 @@ import com.company.contractsystem.user.entity.Role;
 import com.company.contractsystem.user.entity.User;
 import com.company.contractsystem.user.repository.RoleRepository;
 import com.company.contractsystem.user.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,11 +15,14 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User createUser(CreateUserRequest request) {
@@ -33,7 +37,7 @@ public class UserService {
         User user = new User();
         user.setUsername(request.username);
         user.setEmail(request.email);
-        user.setPassword(request.password); // auth ignored
+        user.setPassword(passwordEncoder.encode(request.password));
         user.setRole(role);
 
         return userRepository.save(user);

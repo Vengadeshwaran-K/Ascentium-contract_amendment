@@ -12,24 +12,24 @@
     --success: hsl(142, 71%, 45%);
     --danger: hsl(0, 84%, 60%);
     --warning: hsl(45, 93%, 47%);
-    
+
     --bg-primary: hsl(240, 15%, 8%);
     --bg-secondary: hsl(240, 12%, 12%);
     --bg-tertiary: hsl(240, 10%, 16%);
-    
+
     --text-primary: hsl(0, 0%, 95%);
     --text-secondary: hsl(0, 0%, 70%);
     --text-tertiary: hsl(0, 0%, 50%);
-    
+
     --border-color: hsl(240, 10%, 20%);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    
+
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
-    
+
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -75,6 +75,34 @@ body {
     letter-spacing: 0.5px;
     box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
 }
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-logout {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-logout:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
 
 /* Tabs */
 .tabs {
@@ -163,6 +191,7 @@ body {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -339,25 +368,25 @@ body {
     .container {
         padding: 1rem;
     }
-    
+
     .header {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
     }
-    
+
     .tabs {
         flex-direction: column;
     }
-    
+
     .tab-btn {
         width: 100%;
     }
-    
+
     .card {
         padding: 1.5rem;
     }
-    
+
     .toast {
         right: 1rem;
         left: 1rem;

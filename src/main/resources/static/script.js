@@ -1,6 +1,65 @@
 // API Base URL
 const API_BASE = '';
 
+// Authentication Check
+const authToken = localStorage.getItem('authToken');
+if (!authToken) {
+    // No token found, redirect to login
+    window.location.href = '/login.html';
+}
+
+// Display username in header
+const username = localStorage.getItem('username');
+if (username) {
+    document.addEventListener('DOMContentLoaded', () => {
+        const userDisplay = document.getElementById('user-display');
+        if (userDisplay) {
+            userDisplay.textContent = username;
+        }
+    });
+}
+
+// Logout functionality
+document.addEventListener('DOMContentLoaded', () => {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('username');
+            window.location.href = '/login.html';
+        });
+    }
+});
+
+// Helper function to make authenticated API calls
+async function authenticatedFetch(url, options = {}) {
+    const token = localStorage.getItem('authToken');
+
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+
+    // Handle 401 Unauthorized - token expired or invalid
+    if (response.status === 401) {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('username');
+        window.location.href = '/login.html';
+        throw new Error('Session expired. Please login again.');
+    }
+
+    return response;
+}
+
 // Tab Navigation
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -49,11 +108,8 @@ document.getElementById('create-user-form').addEventListener('submit', async (e)
     };
 
     try {
-        const response = await fetch(`${API_BASE}/admin/users/register`, {
+        const response = await authenticatedFetch(`${API_BASE}/admin/users/register`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(userData)
         });
 
@@ -122,11 +178,8 @@ document.getElementById('user-mapping-form').addEventListener('submit', async (e
     };
 
     try {
-        const response = await fetch(`${API_BASE}/admin/approval-mappings`, {
+        const response = await authenticatedFetch(`${API_BASE}/admin/approval-mappings`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(mappingData)
         });
 
@@ -180,11 +233,8 @@ document.getElementById('create-contract-form').addEventListener('submit', async
     };
 
     try {
-        const response = await fetch(`${API_BASE}/contracts`, {
+        const response = await authenticatedFetch(`${API_BASE}/contracts`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(contractData)
         });
 

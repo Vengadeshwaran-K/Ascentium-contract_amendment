@@ -2,7 +2,9 @@ package com.company.contractsystem.user.entity;
 
 import com.company.contractsystem.enums.RoleType;
 import jakarta.persistence.*;
+import lombok.Data;
 
+@Data
 @Entity
 @Table(name = "role")
 public class Role {
@@ -14,6 +16,4 @@ public class Role {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true)
     private RoleType name;
-
-    // getters and setters
 }
