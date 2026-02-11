@@ -85,4 +85,12 @@ public class ContractController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return service.getAllActiveContracts(user);
     }
+
+    @GetMapping("/stats")
+    public com.company.contractsystem.common.dto.DashboardStats getStats(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return service.getDashboardStats(user);
+    }
 }

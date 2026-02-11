@@ -97,6 +97,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         } else if (targetTab === 'all-contracts') {
             loadAllActiveContracts();
         }
+
+        // Always refresh stats when switching tabs
+        loadDashboardStats();
     });
 });
 
@@ -133,6 +136,7 @@ document.getElementById('create-user-form').addEventListener('submit', async (e)
             const user = await response.json();
             showToast(`User "${user.username}" created successfully!`, 'success');
             e.target.reset();
+            loadDashboardStats();
         } else {
             const error = await response.text();
             showToast(`Error: ${error}`, 'error');
@@ -271,6 +275,7 @@ document.getElementById('create-contract-form').addEventListener('submit', async
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Contract Management Dashboard loaded');
     applyRoleBasedAccess();
+    loadDashboardStats();
 });
 
 function applyRoleBasedAccess() {
@@ -403,6 +408,7 @@ async function submitContract(id) {
         if (response.ok) {
             showToast('Contract submitted successfully!', 'success');
             loadMyContracts();
+            loadDashboardStats();
         } else {
             showToast('Failed to submit contract', 'error');
         }
@@ -425,6 +431,7 @@ async function approveContract(id) {
         if (response.ok) {
             showToast('Contract approved!', 'success');
             loadApprovalQueue();
+            loadDashboardStats();
         } else {
             showToast('Failed to approve contract', 'error');
         }
@@ -452,6 +459,7 @@ async function rejectContract(id, remarks) {
         if (response.ok) {
             showToast('Contract rejected', 'warning');
             loadApprovalQueue();
+            loadDashboardStats();
         } else {
             showToast('Failed to reject contract', 'error');
         }
@@ -486,6 +494,7 @@ async function editContract(id, currentName, currentAmount, currentDate) {
         if (response.ok) {
             showToast('Contract updated successfully!', 'success');
             loadMyContracts();
+            loadDashboardStats();
         } else {
             const error = await response.text();
             showToast(`Error: ${error}`, 'error');
@@ -598,4 +607,55 @@ async function loadAllActiveContracts() {
     } catch (error) {
         showToast(`Error: ${error.message}`, 'error');
     }
+}
+
+// Load Dashboard Stats
+async function loadDashboardStats() {
+    const container = document.getElementById('dashboard-stats');
+    if (!container) return;
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/contracts/stats`);
+        if (!response.ok) throw new Error('Failed to fetch stats');
+
+        const data = await response.json();
+        renderStats(data.counters);
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+function renderStats(counters) {
+    const container = document.getElementById('dashboard-stats');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (const [label, value] of Object.entries(counters)) {
+        const card = document.createElement('div');
+        card.className = 'stats-card';
+        card.innerHTML = `
+            <span class="stats-value" id="stats-value-${label.replace(/\s+/g, '-').toLowerCase()}">${value}</span>
+            <span class="stats-label">${label}</span>
+        `;
+        container.appendChild(card);
+
+        // Animate the number counting up
+        animateValue(`stats-value-${label.replace(/\s+/g, '-').toLowerCase()}`, 0, value, 1000);
+    }
+}
+
+function animateValue(id, start, end, duration) {
+    const obj = document.getElementById(id);
+    if (!obj || isNaN(end)) return;
+
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
 }

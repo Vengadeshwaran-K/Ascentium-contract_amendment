@@ -1,20 +1,23 @@
 package com.company.contractsystem.contract.service;
 
 import com.company.contractsystem.approval.repository.ApprovalMappingRepository;
+import com.company.contractsystem.common.dto.DashboardStats;
 import com.company.contractsystem.contract.dto.CreateContractRequest;
 import com.company.contractsystem.contract.entity.Contract;
 import com.company.contractsystem.contract.entity.ContractStatus;
 import com.company.contractsystem.contract.entity.ContractVersion;
 import com.company.contractsystem.contract.repository.ContractRepository;
 import com.company.contractsystem.contract.repository.ContractVersionRepository;
+import com.company.contractsystem.enums.RoleType;
 import com.company.contractsystem.user.entity.User;
 import com.company.contractsystem.user.repository.UserRepository;
-import com.company.contractsystem.enums.RoleType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -225,5 +228,91 @@ public class ContractService {
                     return v.getContract().getClient().getId().equals(user.getId());
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardStats getDashboardStats(User user) {
+        RoleType role = user.getRole().getName();
+        Map<String, Long> counters = new HashMap<>();
+        List<ContractVersion> allLatest = versionRepository.findAll().stream()
+                .collect(Collectors.groupingBy(v -> v.getContract().getId()))
+                .values().stream()
+                .map(list -> list.stream()
+                        .max((v1, v2) -> Integer.compare(v1.getVersionNumber(), v2.getVersionNumber())).get())
+                .collect(Collectors.toList());
+
+        if (role == RoleType.SUPER_ADMIN) {
+            counters.put("Total Contracts", contractRepository.count());
+            counters.put("Approved Contracts", allLatest.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.ACTIVE).count());
+            counters.put("Waiting List", allLatest.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.PENDING_FINANCE
+                            || v.getStatus() == ContractStatus.PENDING_CLIENT)
+                    .count());
+
+            Map<String, Long> userCounts = userRepository.findAll().stream()
+                    .collect(Collectors.groupingBy(u -> u.getRole().getName().toString(), Collectors.counting()));
+            for (Map.Entry<String, Long> entry : userCounts.entrySet()) {
+                counters.put("Users: " + entry.getKey(), entry.getValue());
+            }
+        } else if (role == RoleType.LEGAL_USER) {
+            List<ContractVersion> myContracts = allLatest.stream()
+                    .filter(v -> {
+                        // Check if user created V1
+                        return versionRepository.findAll().stream()
+                                .anyMatch(av -> av.getContract().getId().equals(v.getContract().getId())
+                                        && av.getVersionNumber() == 1
+                                        && av.getCreator().getId().equals(user.getId()));
+                    }).collect(Collectors.toList());
+
+            counters.put("Contracts Created", (long) myContracts.size());
+            counters.put("Sent to Finance", myContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.PENDING_FINANCE).count());
+            counters.put("Approved", myContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.ACTIVE).count());
+            counters.put("Rejected", myContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.REJECTED_BY_FINANCE
+                            || v.getStatus() == ContractStatus.REJECTED_BY_CLIENT)
+                    .count());
+        } else if (role == RoleType.FINANCE_REVIEWER) {
+            List<ContractVersion> mappedContracts = allLatest.stream()
+                    .filter(v -> {
+                        // Find V1 creator
+                        User creator = versionRepository.findAll().stream()
+                                .filter(av -> av.getContract().getId().equals(v.getContract().getId())
+                                        && av.getVersionNumber() == 1)
+                                .findFirst().map(av -> av.getCreator()).orElse(null);
+                        if (creator == null)
+                            return false;
+                        return mappingRepository.findByLegalUser(creator)
+                                .map(m -> m.getFinanceUser().getId().equals(user.getId()))
+                                .orElse(false);
+                    }).collect(Collectors.toList());
+
+            counters.put("Pending My Review", mappedContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.PENDING_FINANCE).count());
+            counters.put("Approved by Me", mappedContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.PENDING_CLIENT
+                            || v.getStatus() == ContractStatus.ACTIVE)
+                    .count());
+            counters.put("Rejected by Me", mappedContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.REJECTED_BY_FINANCE).count());
+        } else if (role == RoleType.CLIENT) {
+            List<ContractVersion> myClientContracts = allLatest.stream()
+                    .filter(v -> v.getContract().getClient().getId().equals(user.getId()))
+                    .collect(Collectors.toList());
+
+            counters.put("Pending My Review", myClientContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.PENDING_CLIENT).count());
+            counters.put("Approved by Me", myClientContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.ACTIVE).count());
+            counters.put("Rejected by Me", myClientContracts.stream()
+                    .filter(v -> v.getStatus() == ContractStatus.REJECTED_BY_CLIENT).count());
+        }
+
+        return DashboardStats.builder()
+                .counters(counters)
+                .role(role.toString())
+                .build();
     }
 }
