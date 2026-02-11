@@ -183,9 +183,22 @@
             <section id="approval-queue" class="tab-content">
                 <div class="card">
                     <h2 class="card-title">Contracts Pending My Approval</h2>
-                    <div id="pending-approvals-list" class="placeholder-content">
-                        <p>No contracts pending approval at the moment.</p>
-                        <p class="text-hint">Finance Reviewers and Clients can see their assigned contracts here.</p>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Contract Name</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Creator</th>
+                                    <th>Remarks</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approval-queue-body">
+                                <!-- Data populated by JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -194,8 +207,21 @@
             <section id="view-contracts" class="tab-content">
                 <div class="card">
                     <h2 class="card-title">My Contracts</h2>
-                    <div id="contracts-list" class="placeholder-content">
-                        <p>No contracts found.</p>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Contract Name</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contracts-list-body">
+                                <!-- Data populated by JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>

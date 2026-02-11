@@ -393,3 +393,114 @@ body {
         bottom: 1rem;
     }
 }
+
+/* Final layout adjustments */
+.table-container {
+    overflow-x: auto;
+    margin-top: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.data-table th {
+    padding: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.draft {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.status-badge.pending_finance {
+    background: hsla(45, 93%, 47%, 0.2);
+    color: var(--warning);
+    border: 1px solid hsla(45, 93%, 47%, 0.3);
+}
+
+.status-badge.pending_client {
+    background: hsla(250, 95%, 65%, 0.2);
+    color: var(--primary-light);
+    border: 1px solid hsla(250, 95%, 65%, 0.3);
+}
+
+.status-badge.active {
+    background: hsla(142, 71%, 45%, 0.2);
+    color: var(--success);
+    border: 1px solid hsla(142, 71%, 45%, 0.3);
+}
+
+.status-badge.rejected_by_finance,
+.status-badge.rejected_by_client {
+    background: hsla(0, 84%, 60%, 0.2);
+    color: var(--danger);
+    border: 1px solid hsla(0, 84%, 60%, 0.3);
+}
+
+/* Small buttons for table actions */
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+    box-shadow: none;
+}
+
+.btn-approve {
+    background: var(--success);
+    color: white;
+}
+
+.btn-reject {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-submit {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.1);
+}
+
+.text-center {
+    text-align: center;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-start;
+}

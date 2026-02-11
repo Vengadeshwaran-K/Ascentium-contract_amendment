@@ -51,6 +51,8 @@ async function authenticatedFetch(url, options = {}) {
 
     // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {
+        const errorText = await response.text();
+        console.error('Unauthorized request:', url, 'Response:', errorText);
         localStorage.removeItem('authToken');
         localStorage.removeItem('username');
         window.location.href = '/login.html';
@@ -80,6 +82,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadUsersForMapping();
         } else if (targetTab === 'create-contract') {
             loadClientsForContract();
+        } else if (targetTab === 'approval-queue') {
+            loadApprovalQueue();
+        } else if (targetTab === 'view-contracts') {
+            loadMyContracts();
         }
     });
 });
@@ -129,7 +135,7 @@ document.getElementById('create-user-form').addEventListener('submit', async (e)
 // Load Users for Mapping
 async function loadUsersForMapping() {
     try {
-        const response = await fetch(`${API_BASE}/admin/users`);
+        const response = await authenticatedFetch(`${API_BASE}/admin/users`);
         if (!response.ok) throw new Error('Failed to fetch users');
 
         const users = await response.json();
@@ -198,7 +204,7 @@ document.getElementById('user-mapping-form').addEventListener('submit', async (e
 // Load Clients for Contract
 async function loadClientsForContract() {
     try {
-        const response = await fetch(`${API_BASE}/admin/users`);
+        const response = await authenticatedFetch(`${API_BASE}/admin/users`);
         if (!response.ok) throw new Error('Failed to fetch users');
 
         const users = await response.json();
@@ -295,4 +301,172 @@ function applyRoleBasedAccess() {
 function show(id) {
     const el = document.getElementById(id);
     if (el) el.style.display = 'flex';
+}
+
+// Load Approval Queue
+async function loadApprovalQueue() {
+    const listBody = document.getElementById('approval-queue-body');
+    if (!listBody) return;
+    listBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/contracts/approval-queue`);
+        if (!response.ok) throw new Error('Failed to fetch approval queue');
+
+        const versions = await response.json();
+        listBody.innerHTML = '';
+
+        if (versions.length === 0) {
+            listBody.innerHTML = '<tr><td colspan="6" class="text-center">No contracts pending approval.</td></tr>';
+            return;
+        }
+
+        versions.forEach(v => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${v.contract.contractName}</td>
+                <td>V${v.versionNumber}</td>
+                <td><span class="status-badge ${v.status.toLowerCase()}">${v.status.replace(/_/g, ' ')}</span></td>
+                <td>${v.creator.username}</td>
+                <td>${v.remarks || '-'}</td>
+                <td class="actions">
+                    <button class="btn btn-sm btn-approve" onclick="approveContract(${v.contract.id})">Approve</button>
+                    <button class="btn btn-sm btn-reject" onclick="promptReject(${v.contract.id})">Reject</button>
+                </td>
+            `;
+            listBody.appendChild(row);
+        });
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Load My Contracts
+async function loadMyContracts() {
+    const listBody = document.getElementById('contracts-list-body');
+    if (!listBody) return;
+    listBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/contracts/my-contracts`);
+        if (!response.ok) throw new Error('Failed to fetch contracts');
+
+        const versions = await response.json();
+        listBody.innerHTML = '';
+
+        if (versions.length === 0) {
+            listBody.innerHTML = '<tr><td colspan="5" class="text-center">No contracts found.</td></tr>';
+            return;
+        }
+
+        versions.forEach(v => {
+            const row = document.createElement('tr');
+            const canSubmit = (v.status === 'DRAFT' || v.status.startsWith('REJECTED'));
+            row.innerHTML = `
+                <td>${v.contract.contractName}</td>
+                <td>V${v.versionNumber}</td>
+                <td><span class="status-badge ${v.status.toLowerCase()}">${v.status.replace(/_/g, ' ')}</span></td>
+                <td>${v.remarks || '-'}</td>
+                <td class="actions">
+                    ${canSubmit ? `
+                        <button class="btn btn-sm btn-edit" onclick="editContract(${v.contract.id}, '${v.contract.contractName}', ${v.contract.contractAmount}, '${v.contract.effectiveDate}')">Edit</button>
+                        <button class="btn btn-sm btn-submit" onclick="submitContract(${v.contract.id})">Submit</button>
+                    ` : '-'}
+                </td>
+            `;
+            listBody.appendChild(row);
+        });
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function submitContract(id) {
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/contracts/${id}/submit`, { method: 'POST' });
+        if (response.ok) {
+            showToast('Contract submitted successfully!', 'success');
+            loadMyContracts();
+        } else {
+            showToast('Failed to submit contract', 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function approveContract(id) {
+    const remarks = prompt("Enter approval remarks (optional):");
+    try {
+        const url = `${API_BASE}/contracts/${id}/approve${remarks ? `?remarks=${encodeURIComponent(remarks)}` : ''}`;
+        const response = await authenticatedFetch(url, { method: 'POST' });
+        if (response.ok) {
+            showToast('Contract approved!', 'success');
+            loadApprovalQueue();
+        } else {
+            showToast('Failed to approve contract', 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+function promptReject(id) {
+    const remarks = prompt("Enter rejection remarks (required):");
+    if (remarks) {
+        rejectContract(id, remarks);
+    } else {
+        showToast('Remarks are required for rejection', 'error');
+    }
+}
+
+async function rejectContract(id, remarks) {
+    try {
+        const url = `${API_BASE}/contracts/${id}/reject?remarks=${encodeURIComponent(remarks)}`;
+        const response = await authenticatedFetch(url, { method: 'POST' });
+        if (response.ok) {
+            showToast('Contract rejected', 'warning');
+            loadApprovalQueue();
+        } else {
+            showToast('Failed to reject contract', 'error');
+        }
+    } catch (error) {
+        showToast(`Error: ${error.message}`, 'error');
+    }
+}
+
+async function editContract(id, currentName, currentAmount, currentDate) {
+    const name = prompt("Enter new Contract Name:", currentName);
+    if (name === null) return;
+
+    const amountStr = prompt("Enter new Contract Amount:", currentAmount);
+    if (amountStr === null) return;
+    const amount = parseFloat(amountStr);
+
+    const date = prompt("Enter new Effective Date (YYYY-MM-DD):", currentDate);
+    if (date === null) return;
+
+    const updateData = {
+        contractName: name,
+        contractAmount: amount,
+        effectiveDate: date,
+        clientId: 0 // Backend currently ignores this for updates
+    };
+
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/contracts/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updateData)
+        });
+
+        if (response.ok) {
+            showToast('Contract updated successfully!', 'success');
+            loadMyContracts();
+        } else {
+            const error = await response.text();
+            showToast(`Error: ${error}`, 'error');
+        }
+    } catch (error) {
+        showToast(`Network error: ${error.message}`, 'error');
+    }
 }
