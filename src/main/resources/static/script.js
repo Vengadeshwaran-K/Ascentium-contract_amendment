@@ -83,9 +83,16 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        document.getElementById(targetTab).classList.add('active');
 
-        // Load users when switching to mapping or contract tabs
+        if (targetTab === 'dashboard-overview') {
+            document.body.classList.remove('tab-active');
+        } else {
+            const section = document.getElementById(targetTab);
+            if (section) section.classList.add('active');
+            document.body.classList.add('tab-active');
+        }
+
+        // Load data based on tab
         if (targetTab === 'user-mapping') {
             loadUsersForMapping();
         } else if (targetTab === 'create-contract') {
@@ -98,7 +105,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadAllActiveContracts();
         }
 
-        // Always refresh stats when switching tabs
+        // Always refresh stats in background
         loadDashboardStats();
     });
 });
@@ -274,6 +281,7 @@ document.getElementById('create-contract-form').addEventListener('submit', async
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Contract Management Dashboard loaded');
+    document.body.classList.remove('tab-active'); // Ensure summary view on load
     applyRoleBasedAccess();
     loadDashboardStats();
 });
@@ -283,13 +291,15 @@ function applyRoleBasedAccess() {
     console.log('Applying access for role:', role);
 
     // Default: Hide everything
-    const allTabs = ['tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts', 'tab-all-contracts'];
-    const allSections = ['create-user', 'user-mapping', 'create-contract', 'approval-queue', 'view-contracts', 'all-contracts'];
+    const allTabs = ['tab-dashboard-overview', 'tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts', 'tab-all-contracts'];
 
     allTabs.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
     });
+
+    // Dashboard Overview is available to everyone
+    show('tab-dashboard-overview');
 
     // Show based on role
     let defaultTab = '';
@@ -314,9 +324,12 @@ function applyRoleBasedAccess() {
     }
 
     // Set default active tab if current one is hidden
+    // Commented out to show Summary View by default
+    /*
     if (defaultTab) {
         document.getElementById(defaultTab).click();
     }
+    */
 }
 
 function show(id) {

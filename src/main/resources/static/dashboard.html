@@ -10,7 +10,7 @@
 </head>
 
 <body>
-    <div class="container">
+    <div class="container main-layout">
         <header class="header">
             <h1 class="logo">Contract Management System</h1>
             <div class="user-info">
@@ -25,244 +25,278 @@
             </div>
         </header>
 
-        <!-- Dynamic Statistics Dashboard -->
-        <div id="dashboard-stats" class="stats-grid">
-            <!-- Populated by JS -->
-        </div>
-
-        <nav class="tabs">
-            <button class="tab-btn" data-tab="all-contracts" id="tab-all-contracts" style="display: none;">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                    <path d="M12 11l3 3-3 3"></path>
-                    <path d="M9 14h6"></path>
-                </svg>
-                Approved Contracts
-            </button>
-            <button class="tab-btn active" data-tab="create-user" id="tab-create-user">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="8.5" cy="7" r="4"></circle>
-                    <line x1="20" y1="8" x2="20" y2="14"></line>
-                    <line x1="23" y1="11" x2="17" y2="11"></line>
-                </svg>
-                Create User
-            </button>
-            <button class="tab-btn" data-tab="user-mapping" id="tab-user-mapping">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                User Mapping
-            </button>
-            <button class="tab-btn" data-tab="create-contract" id="tab-create-contract">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="12" y1="18" x2="12" y2="12"></line>
-                    <line x1="9" y1="15" x2="15" y2="15"></line>
-                </svg>
-                Create Contract
-            </button>
-            <button class="tab-btn" data-tab="approval-queue" id="tab-approval-queue">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <polyline points="9 11 12 14 22 4"></polyline>
-                </svg>
-                Approval Queue
-            </button>
-            <button class="tab-btn" data-tab="view-contracts" id="tab-view-contracts">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                </svg>
-                My Contracts
-            </button>
-        </nav>
-
-        <main class="content">
-            <!-- Create User Tab -->
-            <section id="create-user" class="tab-content active">
-                <div class="card">
-                    <h2 class="card-title">Create New User</h2>
-                    <form id="create-user-form" class="form">
-                        <div class="form-group">
-                            <label for="username">Username</label>
-                            <input type="text" id="username" name="username" required placeholder="Enter username">
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" required placeholder="user@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" name="password" required placeholder="Enter password">
-                        </div>
-                        <div class="form-group">
-                            <label for="role">Role</label>
-                            <select id="role" name="role" required>
-                                <option value="">Select Role</option>
-                                <option value="SUPER_ADMIN">Super Admin</option>
-                                <option value="LEGAL_USER">Legal User</option>
-                                <option value="FINANCE_REVIEWER">Finance Reviewer</option>
-                                <option value="CLIENT">Client</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <div class="layout-body">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
+                <div class="side-panel-section">
+                    <h3 class="side-panel-title">Navigation</h3>
+                    <nav class="tabs vertical-tabs">
+                        <button class="tab-btn active" data-tab="dashboard-overview" id="tab-dashboard-overview">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            <span class="tab-text">Dashboard Overview</span>
+                        </button>
+                        <button class="tab-btn" data-tab="all-contracts" id="tab-all-contracts" style="display: none;">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                </path>
+                                <path d="M12 11l3 3-3 3"></path>
+                                <path d="M9 14h6"></path>
+                            </svg>
+                            <span class="tab-text">Approved Contracts</span>
+                        </button>
+                        <button class="tab-btn" data-tab="create-user" id="tab-create-user">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="8.5" cy="7" r="4"></circle>
                                 <line x1="20" y1="8" x2="20" y2="14"></line>
-                                <line x1="23" y1="11" x2="17" y2="11"></line>
+                                <line x1="23" x2="17" y2="11"></line>
                             </svg>
-                            Create User
+                            <span class="tab-text">Create User</span>
                         </button>
-                    </form>
-                </div>
-            </section>
-
-            <!-- User Mapping Tab -->
-            <section id="user-mapping" class="tab-content">
-                <div class="card">
-                    <h2 class="card-title">Approval Workflow Mapping</h2>
-                    <p class="card-description">Map Legal User → Finance Reviewer → Client for approval workflow</p>
-                    <form id="user-mapping-form" class="form">
-                        <div class="form-group">
-                            <label for="legal-user">Legal User</label>
-                            <select id="legal-user" name="legalUserId" required>
-                                <option value="">Select Legal User</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="finance-user">Finance Reviewer</label>
-                            <select id="finance-user" name="financeUserId" required>
-                                <option value="">Select Finance Reviewer</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="client-user">Client</label>
-                            <select id="client-user" name="clientUserId" required>
-                                <option value="">Select Client</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <polyline points="20 6 9 17 4 12"></polyline>
+                        <button class="tab-btn" data-tab="user-mapping" id="tab-user-mapping">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                             </svg>
-                            Create Mapping
+                            <span class="tab-text">User Mapping</span>
                         </button>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Create Contract Tab -->
-            <section id="create-contract" class="tab-content">
-                <div class="card">
-                    <h2 class="card-title">Create New Contract</h2>
-                    <form id="create-contract-form" class="form">
-                        <div class="form-group">
-                            <label for="contract-name">Contract Name</label>
-                            <input type="text" id="contract-name" name="contractName" required
-                                placeholder="Enter contract name">
-                        </div>
-                        <div class="form-group">
-                            <label for="client-id">Client</label>
-                            <select id="client-id" name="clientId" required>
-                                <option value="">Select Client</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="effective-date">Effective Date</label>
-                            <input type="date" id="effective-date" name="effectiveDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="contract-amount">Contract Amount</label>
-                            <input type="number" id="contract-amount" name="contractAmount" step="0.01" required
-                                placeholder="0.00">
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <button class="tab-btn" data-tab="create-contract" id="tab-create-contract">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                                 <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
                             </svg>
-                            Create Contract
+                            <span class="tab-text">Create Contract</span>
                         </button>
-                    </form>
+                        <button class="tab-btn" data-tab="approval-queue" id="tab-approval-queue">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <polyline points="9 11 12 14 22 4"></polyline>
+                            </svg>
+                            <span class="tab-text">Approval Queue</span>
+                        </button>
+                        <button class="tab-btn" data-tab="view-contracts" id="tab-view-contracts">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                </path>
+                            </svg>
+                            <span class="tab-text">My Contracts</span>
+                        </button>
+                    </nav>
                 </div>
-            </section>
-            <!-- Approval Queue Tab -->
-            <section id="approval-queue" class="tab-content">
-                <div class="card">
-                    <h2 class="card-title">Contracts Pending My Approval</h2>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Contract Name</th>
-                                    <th>Version</th>
-                                    <th>Status</th>
-                                    <th>Creator</th>
-                                    <th>Remarks</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="approval-queue-body">
-                                <!-- Data populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
+            </aside>
 
-            <!-- View Contracts Tab -->
-            <section id="view-contracts" class="tab-content">
-                <div class="card">
-                    <h2 class="card-title">My Contracts</h2>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Contract Name</th>
-                                    <th>Version</th>
-                                    <th>Status</th>
-                                    <th>Remarks</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="contracts-list-body">
-                                <!-- Data populated by JS -->
-                            </tbody>
-                        </table>
+            <div class="main-wrapper">
+                <!-- Dynamic Statistics Dashboard -->
+                <div class="stats-container" id="stats-section">
+                    <div id="dashboard-stats" class="stats-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div id="welcome-message" style="text-align: center; margin-top: 4rem;">
+                        <h2
+                            style="font-size: 2.5rem; background: linear-gradient(135deg, var(--primary-light), var(--secondary-light)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">
+                            Dashboard Summary</h2>
+                        <p
+                            style="color: var(--text-tertiary); font-size: 1.1rem; margin-top: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                            Select an option from the sidebar to manage your contracts and workflow.</p>
                     </div>
                 </div>
-            </section>
 
-            <!-- All Contracts Tab (Admin) -->
-            <section id="all-contracts" class="tab-content">
-                <div class="card">
-                    <h2 class="card-title">Approved Contracts</h2>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Contract Name</th>
-                                    <th>Version</th>
-                                    <th>Client</th>
-                                    <th>Amount</th>
-                                    <th>Effective Date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="all-contracts-list-body">
-                                <!-- Data populated by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-        </main>
+                <main class="content">
+                    <!-- Create User Tab -->
+                    <section id="create-user" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">Create New User</h2>
+                            <form id="create-user-form" class="form">
+                                <div class="form-group">
+                                    <label for="username">Username</label>
+                                    <input type="text" id="username" name="username" required
+                                        placeholder="Enter username">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" name="email" required placeholder="user@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="password">Password</label>
+                                    <input type="password" id="password" name="password" required
+                                        placeholder="Enter password">
+                                </div>
+                                <div class="form-group">
+                                    <label for="role">Role</label>
+                                    <select id="role" name="role" required>
+                                        <option value="">Select Role</option>
+                                        <option value="SUPER_ADMIN">Super Admin</option>
+                                        <option value="LEGAL_USER">Legal User</option>
+                                        <option value="FINANCE_REVIEWER">Finance Reviewer</option>
+                                        <option value="CLIENT">Client</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="8.5" cy="7" r="4"></circle>
+                                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                                    </svg>
+                                    Create User
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- User Mapping Tab -->
+                    <section id="user-mapping" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">Approval Workflow Mapping</h2>
+                            <p class="card-description">Map Legal User → Finance Reviewer → Client for approval workflow
+                            </p>
+                            <form id="user-mapping-form" class="form">
+                                <div class="form-group">
+                                    <label for="legal-user">Legal User</label>
+                                    <select id="legal-user" name="legalUserId" required>
+                                        <option value="">Select Legal User</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="finance-user">Finance Reviewer</label>
+                                    <select id="finance-user" name="financeUserId" required>
+                                        <option value="">Select Finance Reviewer</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-user">Client</label>
+                                    <select id="client-user" name="clientUserId" required>
+                                        <option value="">Select Client</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                    Create Mapping
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- Create Contract Tab -->
+                    <section id="create-contract" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">Create New Contract</h2>
+                            <form id="create-contract-form" class="form">
+                                <div class="form-group">
+                                    <label for="contract-name">Contract Name</label>
+                                    <input type="text" id="contract-name" name="contractName" required
+                                        placeholder="Enter contract name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-id">Client</label>
+                                    <select id="client-id" name="clientId" required>
+                                        <option value="">Select Client</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="effective-date">Effective Date</label>
+                                    <input type="date" id="effective-date" name="effectiveDate" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="contract-amount">Contract Amount</label>
+                                    <input type="number" id="contract-amount" name="contractAmount" step="0.01" required
+                                        placeholder="0.00">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                    </svg>
+                                    Create Contract
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+                    <!-- Approval Queue Tab -->
+                    <section id="approval-queue" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">Contracts Pending My Approval</h2>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Contract Name</th>
+                                            <th>Version</th>
+                                            <th>Status</th>
+                                            <th>Creator</th>
+                                            <th>Remarks</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="approval-queue-body">
+                                        <!-- Data populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- View Contracts Tab -->
+                    <section id="view-contracts" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">My Contracts</h2>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Contract Name</th>
+                                            <th>Version</th>
+                                            <th>Status</th>
+                                            <th>Remarks</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="contracts-list-body">
+                                        <!-- Data populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- All Contracts Tab (Admin) -->
+                    <section id="all-contracts" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">Approved Contracts</h2>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Contract Name</th>
+                                            <th>Version</th>
+                                            <th>Client</th>
+                                            <th>Amount</th>
+                                            <th>Effective Date</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="all-contracts-list-body">
+                                        <!-- Data populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </div>
 
         <!-- Toast Notification -->
         <div id="toast" class="toast"></div>

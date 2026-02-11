@@ -42,9 +42,16 @@ body {
 }
 
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Header */
@@ -52,9 +59,14 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
-    padding-bottom: 1.5rem;
+    padding: 1rem 2rem;
+    background: var(--bg-secondary);
     border-bottom: 2px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
 }
 
 .logo {
@@ -106,7 +118,7 @@ body {
 /* Statistics Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
     animation: slideDown 0.5s ease-out;
@@ -176,77 +188,154 @@ body {
 }
 
 
-/* Tabs */
-.tabs {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-    background: var(--bg-secondary);
-    padding: 0.5rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+/* Layout Body */
+.container {
+    padding-top: 80px;
+    /* Header height */
+    max-width: 100%;
 }
 
-.tab-btn {
+.layout-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+/* Main Container to hold stats and content */
+.main-wrapper {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1rem;
-    font-weight: 500;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: var(--transition);
+    flex-direction: column;
+    overflow-y: auto;
     position: relative;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 70px;
+    height: 100%;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
+    z-index: 900;
+    flex-shrink: 0;
 }
 
-.tab-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+.sidebar:hover {
+    width: 280px;
+}
+
+.side-panel-section {
+    width: 280px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.side-panel-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 1.25rem 1.5rem;
+    color: var(--text-tertiary);
     opacity: 0;
-    transition: var(--transition);
-    z-index: -1;
+    transition: opacity 0.2s;
+    white-space: nowrap;
 }
 
-.tab-btn:hover {
-    color: var(--text-primary);
-    transform: translateY(-2px);
-}
-
-.tab-btn:hover::before {
-    opacity: 0.1;
-}
-
-.tab-btn.active {
-    color: var(--text-primary);
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
-}
-
-.tab-btn.active::before {
+.sidebar:hover .side-panel-title {
     opacity: 1;
 }
 
-.tab-icon {
+.vertical-tabs .tab-btn {
+    width: 280px;
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    gap: 1.25rem;
+    border: none;
+    border-left: 4px solid transparent;
+    background: transparent !important;
+    color: var(--text-secondary);
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.vertical-tabs .tab-btn:hover {
+    color: var(--text-primary);
+    background: hsla(0, 0%, 100%, 0.05) !important;
+}
+
+.vertical-tabs .tab-btn.active {
+    color: var(--primary-light);
+    background: linear-gradient(90deg, hsla(250, 95%, 65%, 0.1), transparent) !important;
+    border-left: 4px solid var(--primary);
+}
+
+.vertical-tabs .tab-icon {
     width: 20px;
     height: 20px;
+    min-width: 20px;
     stroke-width: 2;
+}
+
+.vertical-tabs .tab-text {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.sidebar:hover .tab-text {
+    opacity: 1;
+}
+
+/* Content Area */
+.content {
+    flex: 1;
+    padding: 2.5rem;
+}
+
+/* Statistics in Summary Mode */
+.stats-container {
+    padding: 4rem 2rem;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+}
+
+/* Hide Stats when Tab is active */
+body.tab-active .stats-container {
+    display: none;
+}
+
+/* Full screen for active tab */
+body.tab-active .content {
+    padding: 0;
+}
+
+body.tab-active .tab-content {
+    min-height: calc(100vh - 80px);
+    border-radius: 0;
+}
+
+body.tab-active .card {
+    border-radius: 0;
+    border: none;
+    min-height: calc(100vh - 80px);
 }
 
 /* Content */
 .content {
-    position: relative;
+    padding: 2.5rem;
 }
 
 .tab-content {
@@ -436,33 +525,41 @@ body {
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .layout-body {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+    }
+
+    .vertical-tabs {
+        flex-direction: row !important;
+        background: var(--bg-tertiary) !important;
+        border-radius: var(--radius-md) !important;
+        overflow-x: auto;
+    }
+
+    .vertical-tabs .tab-btn {
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        white-space: nowrap;
+    }
+
+    .vertical-tabs .tab-btn.active {
+        border-left: none;
+        border-bottom: 3px solid var(--primary);
+    }
+}
+
 @media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
     .container {
         padding: 1rem;
-    }
-
-    .header {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-    }
-
-    .tabs {
-        flex-direction: column;
-    }
-
-    .tab-btn {
-        width: 100%;
-    }
-
-    .card {
-        padding: 1.5rem;
-    }
-
-    .toast {
-        right: 1rem;
-        left: 1rem;
-        bottom: 1rem;
     }
 }
 
