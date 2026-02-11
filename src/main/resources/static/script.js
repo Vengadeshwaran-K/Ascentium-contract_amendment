@@ -4,341 +4,125 @@ const API_BASE = '';
 // Authentication Check
 const authToken = localStorage.getItem('authToken');
 if (!authToken) {
-    // No token found, redirect to login
-    window.location.href = '/login.html';
+    if (window.location.pathname !== '/login.html') {
+        window.location.href = '/login.html';
+    }
 }
 
-// Display username in header
+// Display username and role in header
 const username = localStorage.getItem('username');
-if (username) {
-    document.addEventListener('DOMContentLoaded', () => {
-        const userDisplay = document.getElementById('user-display');
-        if (userDisplay) {
-            userDisplay.textContent = username;
-        }
-    });
-}
+const userRole = localStorage.getItem('role');
 
-// Logout functionality
 document.addEventListener('DOMContentLoaded', () => {
+    // Set user display
+    const userDisplay = document.getElementById('user-display');
+    if (userDisplay && username) {
+        userDisplay.textContent = `${username} (${userRole})`;
+    }
+
+    // Initialize UI
+    applyRoleBasedAccess();
+    loadDashboardStats();
+
+    // Tab Navigation Logic
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabSections = document.querySelectorAll('.tab-section');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-tab');
+
+            // Toggle Buttons
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Toggle Sections
+            tabSections.forEach(s => s.classList.remove('active'));
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) targetSection.classList.add('active');
+
+            // Data Loading based on tab
+            switch (targetId) {
+                case 'dashboard-overview': loadDashboardStats(); break;
+                case 'all-contracts': loadAllActiveContracts(); break;
+                case 'audit-log': loadAuditLogs(); break;
+                case 'user-mapping': loadUsersForMapping(); break;
+                case 'create-contract': loadClientsForContract(); break;
+                case 'approval-queue': loadApprovalQueue(); break;
+                case 'view-contracts': loadMyContracts(); break;
+            }
+        });
+    });
+
+    // Logout
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('username');
+            localStorage.clear();
             window.location.href = '/login.html';
         });
     }
 });
 
-// Helper function to make authenticated API calls
+// Helper for authenticated fetch
 async function authenticatedFetch(url, options = {}) {
     const token = localStorage.getItem('authToken');
-
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers,
     };
 
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const response = await fetch(url, {
-        ...options,
-        headers
-    });
+    const response = await fetch(url, { ...options, headers });
 
-    // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {
-        const errorText = await response.text();
-        console.error('Unauthorized (401) at:', url, 'details:', errorText);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('username');
+        localStorage.clear();
         window.location.href = '/login.html';
-        throw new Error('Session expired. Please login again.');
+        throw new Error('Session expired');
     }
 
-    // Handle 403 Forbidden - logged in but no permission
     if (response.status === 403) {
-        const errorText = await response.text();
-        console.error('Forbidden (403) at:', url, 'details:', errorText);
-        showToast('You do not have permission for this action', 'error');
-        throw new Error('Access denied');
+        showToast('Access denied for this operation', 'error');
+        throw new Error('Forbidden');
     }
 
     return response;
 }
 
-// Tab Navigation
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const targetTab = btn.dataset.tab;
-
-        // Update active tab button
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        // Update active tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
-        });
-
-        if (targetTab === 'dashboard-overview') {
-            document.body.classList.remove('tab-active');
-        } else {
-            const section = document.getElementById(targetTab);
-            if (section) section.classList.add('active');
-            document.body.classList.add('tab-active');
-        }
-
-        // Load data based on tab
-        if (targetTab === 'user-mapping') {
-            loadUsersForMapping();
-        } else if (targetTab === 'create-contract') {
-            loadClientsForContract();
-        } else if (targetTab === 'approval-queue') {
-            loadApprovalQueue();
-        } else if (targetTab === 'view-contracts') {
-            loadMyContracts();
-        } else if (targetTab === 'all-contracts') {
-            loadAllActiveContracts();
-        } else if (targetTab === 'audit-log') {
-            loadAuditLogs();
-        }
-
-        // Always refresh stats in background
-        loadDashboardStats();
-    });
-});
-
-// Toast Notification
+// Toast System
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
+    if (!toast) return;
+
     toast.textContent = message;
-    toast.className = `toast show ${type}`;
+    toast.className = `toast-msg show ${type}`;
 
     setTimeout(() => {
         toast.classList.remove('show');
-    }, 3000);
+    }, 4000);
 }
 
-// Create User Form
-document.getElementById('create-user-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(e.target);
-    const userData = {
-        username: formData.get('username'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        role: formData.get('role')
-    };
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/admin/users/register`, {
-            method: 'POST',
-            body: JSON.stringify(userData)
-        });
-
-        if (response.ok) {
-            const user = await response.json();
-            showToast(`User "${user.username}" created successfully!`, 'success');
-            e.target.reset();
-            loadDashboardStats();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Network error: ${error.message}`, 'error');
-    }
-});
-
-// Load Users for Mapping
-async function loadUsersForMapping() {
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/admin/users`);
-        if (!response.ok) throw new Error('Failed to fetch users');
-
-        const users = await response.json();
-
-        // Populate dropdowns
-        populateUserDropdown('legal-user', users, 'LEGAL_USER');
-        populateUserDropdown('finance-user', users, 'FINANCE_REVIEWER');
-        populateUserDropdown('client-user', users, 'CLIENT');
-    } catch (error) {
-        showToast(`Error loading users: ${error.message}`, 'error');
-    }
-}
-
-function populateUserDropdown(selectId, users, roleFilter) {
-    const select = document.getElementById(selectId);
-    const currentValue = select.value;
-
-    // Clear existing options except the first one
-    select.innerHTML = '<option value="">Select ' + roleFilter.replace('_', ' ') + '</option>';
-
-    // Filter users by role
-    const filteredUsers = users.filter(user => user.role.name === roleFilter);
-
-    filteredUsers.forEach(user => {
-        const option = document.createElement('option');
-        option.value = user.id;
-        option.textContent = `${user.username} (${user.email})`;
-        select.appendChild(option);
-    });
-
-    // Restore previous selection if it still exists
-    if (currentValue) {
-        select.value = currentValue;
-    }
-}
-
-// User Mapping Form
-document.getElementById('user-mapping-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(e.target);
-    const mappingData = {
-        legalUserId: parseInt(formData.get('legalUserId')),
-        financeUserId: parseInt(formData.get('financeUserId')),
-        clientUserId: parseInt(formData.get('clientUserId'))
-    };
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/admin/approval-mappings`, {
-            method: 'POST',
-            body: JSON.stringify(mappingData)
-        });
-
-        if (response.ok) {
-            showToast('Approval mapping created successfully!', 'success');
-            e.target.reset();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Network error: ${error.message}`, 'error');
-    }
-});
-
-// Load Clients for Contract (Mapped to current Legal User)
-async function loadClientsForContract() {
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts/mapped-clients`);
-        if (!response.ok) throw new Error('Failed to fetch mapped clients');
-
-        const clients = await response.json();
-
-        // Populate client dropdown
-        const select = document.getElementById('client-id');
-        if (!select) return;
-
-        select.innerHTML = '<option value="">Select Client (Mapped)</option>';
-
-        clients.forEach(client => {
-            const option = document.createElement('option');
-            option.value = client.id;
-            option.textContent = `${client.displayName || client.username} (${client.email})`;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        showToast(`Error loading mapped clients: ${error.message}`, 'error');
-    }
-}
-
-// Create Contract Form
-document.getElementById('create-contract-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(e.target);
-    const contractAmount = parseFloat(formData.get('contractAmount'));
-    if (contractAmount < 0) {
-        showToast('u should not enter negative numbers', 'error');
-        return;
-    }
-
-    const contractData = {
-        contractName: formData.get('contractName'),
-        clientId: parseInt(formData.get('clientId')),
-        effectiveDate: formData.get('effectiveDate'),
-        contractAmount: parseFloat(formData.get('contractAmount'))
-    };
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts`, {
-            method: 'POST',
-            body: JSON.stringify(contractData)
-        });
-
-        if (response.ok) {
-            const contract = await response.json();
-            showToast(`Contract "${contract.contractName}" created successfully!`, 'success');
-            e.target.reset();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Network error: ${error.message}`, 'error');
-    }
-});
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Contract Management Dashboard loaded');
-    document.body.classList.remove('tab-active'); // Ensure summary view on load
-    applyRoleBasedAccess();
-    loadDashboardStats();
-});
-
+// UI State Management
 function applyRoleBasedAccess() {
     const role = localStorage.getItem('role');
-    console.log('Applying access for role:', role);
+    const adminNav = document.getElementById('admin-nav');
 
-    // Default: Hide everything
-    const allTabs = ['tab-dashboard-overview', 'tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts', 'tab-all-contracts', 'tab-audit-log'];
-
-    allTabs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-
-    // Dashboard Overview is available to everyone
-    show('tab-dashboard-overview');
-
-    // Show based on role
-    let defaultTab = '';
-
+    // Admin only sections
     if (role === 'SUPER_ADMIN') {
-        show('tab-create-user');
-        show('tab-user-mapping');
+        if (adminNav) adminNav.style.display = 'block';
         show('tab-all-contracts');
         show('tab-audit-log');
-        defaultTab = 'tab-all-contracts';
     } else if (role === 'LEGAL_USER') {
         show('tab-create-contract');
         show('tab-view-contracts');
-        defaultTab = 'tab-create-contract';
     } else if (role === 'FINANCE_REVIEWER') {
         show('tab-approval-queue');
         show('tab-view-contracts');
-        defaultTab = 'tab-approval-queue';
     } else if (role === 'CLIENT') {
         show('tab-approval-queue');
         show('tab-all-contracts');
-        defaultTab = 'tab-all-contracts';
     }
-
-    // Set default active tab if current one is hidden
-    // Commented out to show Summary View by default
-    /*
-    if (defaultTab) {
-        document.getElementById(defaultTab).click();
-    }
-    */
 }
 
 function show(id) {
@@ -346,368 +130,370 @@ function show(id) {
     if (el) el.style.display = 'flex';
 }
 
-// Load Approval Queue
-async function loadApprovalQueue() {
-    const listBody = document.getElementById('approval-queue-body');
-    if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts/approval-queue`);
-        if (!response.ok) throw new Error('Failed to fetch approval queue');
-
-        const versions = await response.json();
-        listBody.innerHTML = '';
-
-        if (versions.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="6" class="text-center">No contracts pending approval.</td></tr>';
-            return;
-        }
-
-        versions.forEach(v => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${v.contract.contractName}</td>
-                <td>V${v.versionNumber}</td>
-                <td><span class="status-badge ${v.status.toLowerCase()}">${v.status.replace(/_/g, ' ')}</span></td>
-                <td>${v.creator.username}</td>
-                <td>${v.remarks || '-'}</td>
-                <td class="actions">
-                    <button class="btn btn-sm btn-approve" onclick="approveContract(${v.contract.id})">Approve</button>
-                    <button class="btn btn-sm btn-reject" onclick="promptReject(${v.contract.id})">Reject</button>
-                </td>
-            `;
-            listBody.appendChild(row);
-        });
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
-}
-
-// Load My Contracts
-async function loadMyContracts() {
-    const listBody = document.getElementById('contracts-list-body');
-    if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts/my-contracts`);
-        if (!response.ok) throw new Error('Failed to fetch contracts');
-
-        const versions = await response.json();
-        listBody.innerHTML = '';
-
-        if (versions.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="5" class="text-center">No contracts found.</td></tr>';
-            return;
-        }
-
-        versions.forEach(v => {
-            const row = document.createElement('tr');
-            const canSubmit = (v.status === 'DRAFT' || v.status.startsWith('REJECTED'));
-            row.innerHTML = `
-                <td>${v.contract.contractName}</td>
-                <td>V${v.versionNumber}</td>
-                <td><span class="status-badge ${v.status.toLowerCase()}">${v.status.replace(/_/g, ' ')}</span></td>
-                <td>${v.remarks || '-'}</td>
-                <td class="actions">
-                    ${canSubmit ? `
-                        <button class="btn btn-sm btn-edit" onclick="editContract(${v.contract.id}, '${v.contract.contractName}', ${v.contract.contractAmount}, '${v.contract.effectiveDate}')">Edit</button>
-                        <button class="btn btn-sm btn-submit" onclick="submitContract(${v.contract.id})">Submit</button>
-                    ` : '-'}
-                </td>
-            `;
-            listBody.appendChild(row);
-        });
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
-}
-
-async function submitContract(id) {
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts/${id}/submit`, { method: 'POST' });
-        if (response.ok) {
-            showToast('Contract submitted successfully!', 'success');
-            loadMyContracts();
-            loadDashboardStats();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
-}
-
-async function approveContract(id) {
-    const result = await showModal('Approve Contract', [
-        { id: 'remarks', label: 'Approval Remarks (optional)', type: 'text', placeholder: 'Enter remarks...' }
-    ]);
-
-    if (!result) return;
-    const { remarks } = result;
-
-    try {
-        const url = `${API_BASE}/contracts/${id}/approve${remarks ? `?remarks=${encodeURIComponent(remarks)}` : ''}`;
-        const response = await authenticatedFetch(url, { method: 'POST' });
-        if (response.ok) {
-            showToast('Contract approved!', 'success');
-            loadApprovalQueue();
-            loadDashboardStats();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
-}
-
-async function promptReject(id) {
-    const result = await showModal('Reject Contract', [
-        { id: 'remarks', label: 'Rejection Remarks (required)', type: 'text', placeholder: 'Reason for rejection...', required: true }
-    ]);
-
-    if (result && result.remarks) {
-        rejectContract(id, result.remarks);
-    } else if (result) {
-        showToast('Remarks are required for rejection', 'error');
-    }
-}
-
-async function rejectContract(id, remarks) {
-    try {
-        const url = `${API_BASE}/contracts/${id}/reject?remarks=${encodeURIComponent(remarks)}`;
-        const response = await authenticatedFetch(url, { method: 'POST' });
-        if (response.ok) {
-            showToast('Contract rejected', 'warning');
-            loadApprovalQueue();
-            loadDashboardStats();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
-}
-
-async function editContract(id, currentName, currentAmount, currentDate) {
-    const result = await showModal('Edit Contract', [
-        { id: 'name', label: 'Contract Name', type: 'text', value: currentName, required: true },
-        { id: 'amount', label: 'Contract Amount', type: 'number', value: currentAmount, required: true },
-        { id: 'date', label: 'Effective Date', type: 'date', value: currentDate, required: true }
-    ]);
-
-    if (!result) return;
-    const { name, amount, date } = result;
-
-    if (parseFloat(amount) < 0) {
-        showToast('u should not enter negative numbers', 'error');
-        return;
-    }
-
-    const updateData = {
-        contractName: name,
-        contractAmount: parseFloat(amount),
-        effectiveDate: date,
-        clientId: 0
-    };
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(updateData)
-        });
-
-        if (response.ok) {
-            showToast('Contract updated successfully!', 'success');
-            loadMyContracts();
-            loadDashboardStats();
-        } else {
-            const error = await response.text();
-            showToast(`Error: ${error}`, 'error');
-        }
-    } catch (error) {
-        showToast(`Network error: ${error.message}`, 'error');
-    }
-}
-
-// Custom Modal Logic
-function showModal(title, inputs) {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('custom-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const container = document.getElementById('modal-inputs-container');
-        const btnOk = document.getElementById('modal-ok');
-        const btnCancel = document.getElementById('modal-cancel');
-        const btnClose = document.getElementById('modal-close');
-
-        modalTitle.textContent = title;
-        container.innerHTML = '';
-
-        inputs.forEach(input => {
-            const group = document.createElement('div');
-            group.className = 'modal-input-group';
-
-            const label = document.createElement('label');
-            label.textContent = input.label;
-            group.appendChild(label);
-
-            const el = document.createElement(input.type === 'textarea' ? 'textarea' : 'input');
-            el.id = `modal-field-${input.id}`;
-            if (input.type !== 'textarea') el.type = input.type;
-            el.placeholder = input.placeholder || '';
-            el.value = input.value || '';
-            if (input.required) el.required = true;
-
-            group.appendChild(el);
-            container.appendChild(group);
-        });
-
-        const closeModal = (result) => {
-            modal.classList.remove('show');
-            // Remove listeners to avoid leaks
-            btnOk.onclick = null;
-            btnCancel.onclick = null;
-            btnClose.onclick = null;
-            resolve(result);
-        };
-
-        btnOk.onclick = () => {
-            const data = {};
-            let valid = true;
-            inputs.forEach(input => {
-                const el = document.getElementById(`modal-field-${input.id}`);
-                if (input.required && !el.value) {
-                    el.style.borderColor = 'var(--danger)';
-                    valid = false;
-                } else {
-                    el.style.borderColor = 'var(--border-color)';
-                    data[input.id] = el.value;
-                }
-            });
-            if (valid) closeModal(data);
-        };
-
-        btnCancel.onclick = () => closeModal(null);
-        btnClose.onclick = () => closeModal(null);
-
-        modal.classList.add('show');
-    });
-}
-
-// Load All Active Contracts (Admin)
-async function loadAllActiveContracts() {
-    const listBody = document.getElementById('all-contracts-list-body');
-    if (!listBody) return;
-    listBody.innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
-
-    try {
-        const response = await authenticatedFetch(`${API_BASE}/contracts/all-active`);
-        if (!response.ok) throw new Error('Failed to fetch contracts');
-
-        const versions = await response.json();
-        listBody.innerHTML = '';
-
-        if (versions.length === 0) {
-            listBody.innerHTML = '<tr><td colspan="6" class="text-center">No active contracts found.</td></tr>';
-            return;
-        }
-
-        versions.forEach(v => {
-            const row = document.createElement('tr');
-            const contractName = v.contract ? v.contract.contractName : 'N/A';
-            const clientName = (v.contract && v.contract.client) ? v.contract.client.username : 'N/A';
-            const amount = (v.contract && v.contract.contractAmount) ?
-                `$${v.contract.contractAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-';
-            const date = (v.contract && v.contract.effectiveDate) ? v.contract.effectiveDate : '-';
-
-            row.innerHTML = `
-                <td>${contractName}</td>
-                <td>V${v.versionNumber}</td>
-                <td>${clientName}</td>
-                <td>${amount}</td>
-                <td>${date}</td>
-                <td><span class="status-badge active">ACTIVE</span></td>
-            `;
-            listBody.appendChild(row);
-        });
-    } catch (error) {
-        showToast(`Error: ${error.message}`, 'error');
-    }
-}
-
-// Load Dashboard Stats
+// Data Loaders
 async function loadDashboardStats() {
-    const container = document.getElementById('dashboard-stats');
-    if (!container) return;
-
     try {
         const response = await authenticatedFetch(`${API_BASE}/contracts/stats`);
-        if (!response.ok) throw new Error('Failed to fetch stats');
-
+        if (!response.ok) return;
         const data = await response.json();
-        renderStats(data.counters);
-    } catch (error) {
-        console.error('Error loading stats:', error);
-    }
-}
 
-function renderStats(counters) {
-    const container = document.getElementById('dashboard-stats');
-    if (!container) return;
-    container.innerHTML = '';
+        const container = document.getElementById('dashboard-stats');
+        if (!container) return;
 
-    for (const [label, value] of Object.entries(counters)) {
-        const card = document.createElement('div');
-        card.className = 'stats-card';
-        card.innerHTML = `
-            <span class="stats-value" id="stats-value-${label.replace(/\s+/g, '-').toLowerCase()}">${value}</span>
-            <span class="stats-label">${label}</span>
-        `;
-        container.appendChild(card);
+        container.innerHTML = Object.entries(data.counters).map(([label, value]) => `
+            <div class="stat-card">
+                <span class="stat-label">${label}</span>
+                <span class="stat-value" id="val-${label.replace(/\s/g, '')}">${value}</span>
+            </div>
+        `).join('');
 
-        // Animate the number counting up
-        animateValue(`stats-value-${label.replace(/\s+/g, '-').toLowerCase()}`, 0, value, 1000);
-    }
+        // Count up animation
+        Object.entries(data.counters).forEach(([label, value]) => {
+            animateValue(`val-${label.replace(/\s/g, '')}`, 0, value, 800);
+        });
+    } catch (err) { console.error('Stats error:', err); }
 }
 
 function animateValue(id, start, end, duration) {
     const obj = document.getElementById(id);
     if (!obj || isNaN(end)) return;
-
     let startTimestamp = null;
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        }
+        obj.innerHTML = Math.floor(progress * (end - start) + start);
+        if (progress < 1) window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
 }
 
+// User Management Actions
+async function loadUsersForMapping() {
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/admin/users`);
+        if (!res.ok) return;
+        const users = await res.json();
+
+        populateDropdown('legal-user', users, 'LEGAL_USER');
+        populateDropdown('finance-user', users, 'FINANCE_REVIEWER');
+        populateDropdown('client-user', users, 'CLIENT');
+    } catch (err) { showToast('Failed to load users', 'error'); }
+}
+
+function populateDropdown(id, users, role) {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const filtered = users.filter(u => u.role.name === role);
+    select.innerHTML = `<option value="">Select ${role.replace('_', ' ')}</option>` +
+        filtered.map(u => `<option value="${u.id}">${u.displayName || u.username} (${u.email})</option>`).join('');
+}
+
+// Mapping Submission
+document.getElementById('user-mapping-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {
+        legalUserId: parseInt(fd.get('legalUserId')),
+        financeUserId: parseInt(fd.get('financeUserId')),
+        clientUserId: parseInt(fd.get('clientUserId'))
+    };
+
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/admin/approval-mappings`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('Workflow mapping established');
+            e.target.reset();
+        } else {
+            const err = await res.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Network failure', 'error'); }
+});
+
+// Create User Submission
+document.getElementById('create-user-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = Object.fromEntries(fd.entries());
+
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/admin/users/register`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('Identity created successfully');
+            e.target.reset();
+            loadDashboardStats();
+        } else {
+            const err = await res.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Service unavailable', 'error'); }
+});
+
+// Contract Creation
+async function loadClientsForContract() {
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/contracts/mapped-clients`);
+        const clients = await res.json();
+        const select = document.getElementById('client-id');
+        if (select) {
+            select.innerHTML = '<option value="">Select mapped client...</option>' +
+                clients.map(c => `<option value="${c.id}">${c.displayName || c.username}</option>`).join('');
+        }
+    } catch (err) { console.error(err); }
+}
+
+document.getElementById('create-contract-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const amount = parseFloat(fd.get('contractAmount'));
+
+    if (amount < 0) return showToast('Value cannot be negative', 'error');
+
+    const data = {
+        contractName: fd.get('contractName'),
+        clientId: parseInt(fd.get('clientId')),
+        effectiveDate: fd.get('effectiveDate'),
+        contractAmount: amount
+    };
+
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/contracts`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            showToast('Contract draft initialized');
+            e.target.reset();
+            loadDashboardStats();
+        } else {
+            const err = await res.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Submission failed', 'error'); }
+});
+
+// Approval Management
+async function loadApprovalQueue() {
+    const body = document.getElementById('approval-queue-body');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center">Fetching queue...</td></tr>';
+
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/contracts/approval-queue`);
+        const data = await res.json();
+
+        if (data.length === 0) {
+            body.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 4rem; color: var(--text-low)">No items pending your action.</td></tr>';
+            return;
+        }
+
+        body.innerHTML = data.map(v => `
+            <tr>
+                <td>${v.contract.contractName}</td>
+                <td>V${v.versionNumber}</td>
+                <td><span class="badge badge-${v.status.toLowerCase()}">${v.status.replace(/_/g, ' ')}</span></td>
+                <td>${v.creator.username}</td>
+                <td style="font-size: 0.85rem">${v.remarks || '—'}</td>
+                <td class="actions">
+                    <button class="btn-action btn-submit" onclick="approveContract(${v.contract.id})">Approve</button>
+                    <button class="btn-action btn-reject" onclick="promptReject(${v.contract.id})">Reject</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) { showToast('Queue failed to load', 'error'); }
+}
+
+async function approveContract(id) {
+    const res = await showModal('Review Remarks', [{ id: 'remarks', label: 'Comments (Optional)', type: 'text' }]);
+    if (!res) return;
+
+    try {
+        const url = `${API_BASE}/contracts/${id}/approve${res.remarks ? `?remarks=${encodeURIComponent(res.remarks)}` : ''}`;
+        const resp = await authenticatedFetch(url, { method: 'POST' });
+        if (resp.ok) {
+            showToast('Agreement authorized');
+            loadApprovalQueue();
+            loadDashboardStats();
+        } else {
+            const err = await resp.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Sync error', 'error'); }
+}
+
+async function promptReject(id) {
+    const res = await showModal('Rejection Payload', [{ id: 'remarks', label: 'Reason for rejection', type: 'text', required: true }]);
+    if (!res || !res.remarks) return;
+
+    try {
+        const url = `${API_BASE}/contracts/${id}/reject?remarks=${encodeURIComponent(res.remarks)}`;
+        const resp = await authenticatedFetch(url, { method: 'POST' });
+        if (resp.ok) {
+            showToast('Document returned', 'warning');
+            loadApprovalQueue();
+            loadDashboardStats();
+        } else {
+            const err = await resp.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Sync error', 'error'); }
+}
+
+// My Contracts Management
+async function loadMyContracts() {
+    const body = document.getElementById('contracts-list-body');
+    if (!body) return;
+
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/contracts/my-contracts`);
+        const data = await res.json();
+
+        if (data.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 4rem; color: var(--text-low)">Workflow is empty.</td></tr>';
+            return;
+        }
+
+        body.innerHTML = data.map(v => `
+            <tr>
+                <td>${v.contract.contractName}</td>
+                <td>V${v.versionNumber}</td>
+                <td><span class="badge badge-${v.status.toLowerCase()}">${v.status.replace(/_/g, ' ')}</span></td>
+                <td style="font-size: 0.85rem">${v.remarks || '—'}</td>
+                <td class="actions">
+                    <button class="btn-action btn-edit" onclick="editContract(${v.contract.id}, '${v.contract.contractName}', ${v.contract.contractAmount}, '${v.contract.effectiveDate}')">Modify</button>
+                    <button class="btn-action btn-submit" onclick="submitContract(${v.contract.id})">Release</button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (err) { showToast('My contracts failed to load', 'error'); }
+}
+
+async function submitContract(id) {
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/contracts/${id}/submit`, { method: 'POST' });
+        if (res.ok) {
+            showToast('Dispatched to next node');
+            loadMyContracts();
+            loadDashboardStats();
+        } else {
+            const err = await res.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Sync error', 'error'); }
+}
+
+async function editContract(id, name, amount, date) {
+    const res = await showModal('Update Agreement', [
+        { id: 'name', label: 'Contract Title', type: 'text', value: name, required: true },
+        { id: 'amount', label: 'Value ($)', type: 'number', value: amount, required: true },
+        { id: 'date', label: 'Effective Date', type: 'date', value: date, required: true }
+    ]);
+
+    if (!res) return;
+    if (parseFloat(res.amount) < 0) return showToast('Value error', 'error');
+
+    const data = { contractName: res.name, contractAmount: parseFloat(res.amount), effectiveDate: res.date, clientId: 0 };
+
+    try {
+        const resp = await authenticatedFetch(`${API_BASE}/contracts/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        if (resp.ok) {
+            showToast('Changes synchronized');
+            loadMyContracts();
+            loadDashboardStats();
+        } else {
+            const err = await resp.text();
+            showToast(err, 'error');
+        }
+    } catch (err) { showToast('Network error', 'error'); }
+}
+
+// Global Repository
+async function loadAllActiveContracts() {
+    const body = document.getElementById('all-contracts-list-body');
+    if (!body) return;
+
+    try {
+        const res = await authenticatedFetch(`${API_BASE}/contracts/all-active`);
+        const data = await res.json();
+
+        body.innerHTML = data.map(v => `
+            <tr>
+                <td>${v.contract.contractName}</td>
+                <td>V${v.versionNumber}</td>
+                <td>${v.contract.client?.username || 'N/A'}</td>
+                <td>$${v.contract.contractAmount.toLocaleString()}</td>
+                <td>${v.contract.effectiveDate}</td>
+                <td><span class="badge badge-active">Active</span></td>
+            </tr>
+        `).join('');
+    } catch (err) { showToast('Repository sync failed', 'error'); }
+}
+
+// Audit Matrix
 async function loadAuditLogs() {
     try {
-        const response = await authenticatedFetch(`${API_BASE}/api/admin/audit/logs`);
-        if (response.ok) {
-            const logs = await response.json();
-            const body = document.getElementById('audit-log-list-body');
+        const res = await authenticatedFetch(`${API_BASE}/api/admin/audit/logs`);
+        if (!res.ok) return;
+        const logs = await res.json();
+        const body = document.getElementById('audit-log-list-body');
+        if (body) {
             body.innerHTML = logs.slice().reverse().map(log => `
                 <tr>
                     <td>${new Date(log.timestamp).toLocaleString()}</td>
-                    <td><span class="status-badge darft" style="background: hsla(250, 95%, 65%, 0.1); color: var(--text-primary); border: 1px solid hsla(250, 95%, 65%, 0.2);">${log.action}</span></td>
-                    <td style="font-weight: 500;">${log.actor}</td>
-                    <td><small style="color: var(--text-tertiary)">${log.actorRole}</small></td>
-                    <td style="font-size: 0.85rem;">${log.remarks}</td>
+                    <td><span class="badge" style="background: hsla(250, 95%, 65%, 0.1); color: var(--primary)">${log.action}</span></td>
+                    <td style="font-weight: 600;">${log.actor}</td>
+                    <td><small style="color: var(--text-low)">${log.actorRole}</small></td>
+                    <td style="font-size: 0.85rem">${log.remarks}</td>
                 </tr>
             `).join('');
         }
-    } catch (error) {
-        console.error('Error loading audit logs:', error);
-    }
+    } catch (err) { console.error('Audit sync error', err); }
 }
 
+// Modal Engine
+function showModal(title, inputs) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('custom-modal');
+        const container = document.getElementById('modal-inputs-container');
+        const ok = document.getElementById('modal-ok');
+        const cancel = document.getElementById('modal-cancel');
+        const close = document.getElementById('modal-close');
+
+        document.getElementById('modal-title').textContent = title;
+        container.innerHTML = inputs.map(i => `
+            <div class="input-block">
+                <label>${i.label}</label>
+                <input id="mod-${i.id}" type="${i.type}" value="${i.value || ''}" placeholder="${i.id}..." ${i.required ? 'required' : ''}>
+            </div>
+        `).join('');
+
+        const end = (val) => {
+            modal.classList.remove('show');
+            ok.onclick = null; cancel.onclick = null; close.onclick = null;
+            resolve(val);
+        };
+
+        ok.onclick = () => {
+            const data = {};
+            let valid = true;
+            inputs.forEach(i => {
+                const el = document.getElementById(`mod-${i.id}`);
+                if (i.required && !el.value) { el.style.borderColor = 'var(--danger)'; valid = false; }
+                else data[i.id] = el.value;
+            });
+            if (valid) end(data);
+        };
+        cancel.onclick = () => end(null);
+        close.onclick = () => end(null);
+        modal.classList.add('show');
+    });
+}
