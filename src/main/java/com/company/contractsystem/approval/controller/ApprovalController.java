@@ -15,16 +15,16 @@ public class ApprovalController {
     }
 
     @PostMapping("/approve")
-    public Approval approve(@RequestParam Long contractId,
-                            @RequestParam String role,
-                            @RequestParam String remarks) {
+    public Approval approve(@RequestParam("contractId") Long contractId,
+            @RequestParam("role") String role,
+            @RequestParam("remarks") String remarks) {
         return service.approve(contractId, role, remarks);
     }
 
     @PostMapping("/reject")
-    public Approval reject(@RequestParam Long contractId,
-                           @RequestParam String role,
-                           @RequestParam String remarks) {
+    public Approval reject(@RequestParam("contractId") Long contractId,
+            @RequestParam("role") String role,
+            @RequestParam("remarks") String remarks) {
         return service.reject(contractId, role, remarks);
     }
 }

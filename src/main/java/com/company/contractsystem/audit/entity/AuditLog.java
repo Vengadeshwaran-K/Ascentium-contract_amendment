@@ -6,7 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuditLog {
@@ -17,6 +18,7 @@ public class AuditLog {
 
     private String action;
     private String actor;
+    private String actorRole;
     private LocalDateTime timestamp;
     private String remarks;
 }

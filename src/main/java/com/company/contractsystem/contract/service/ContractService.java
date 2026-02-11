@@ -1,6 +1,7 @@
 package com.company.contractsystem.contract.service;
 
 import com.company.contractsystem.approval.repository.ApprovalMappingRepository;
+import com.company.contractsystem.audit.service.AuditService;
 import com.company.contractsystem.common.dto.DashboardStats;
 import com.company.contractsystem.contract.dto.CreateContractRequest;
 import com.company.contractsystem.contract.entity.Contract;
@@ -28,17 +29,20 @@ public class ContractService {
     private final UserRepository userRepository;
     private final VersionService versionService;
     private final ApprovalMappingRepository mappingRepository;
+    private final AuditService auditService;
 
     public ContractService(ContractRepository contractRepository,
             ContractVersionRepository versionRepository,
             UserRepository userRepository,
             VersionService versionService,
-            ApprovalMappingRepository mappingRepository) {
+            ApprovalMappingRepository mappingRepository,
+            AuditService auditService) {
         this.contractRepository = contractRepository;
         this.versionRepository = versionRepository;
         this.userRepository = userRepository;
         this.versionService = versionService;
         this.mappingRepository = mappingRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -56,6 +60,9 @@ public class ContractService {
 
         Contract savedContract = contractRepository.save(contract);
         versionService.createInitialVersion(savedContract, creator);
+
+        auditService.log("CONTRACT_CREATED",
+                "Contract created: " + savedContract.getContractName());
 
         return savedContract;
     }
@@ -79,6 +86,9 @@ public class ContractService {
 
         latest.setUpdatedAt(LocalDateTime.now());
         versionRepository.save(latest);
+
+        auditService.log("CONTRACT_SUBMITTED",
+                "Contract submitted (ID: " + id + ") to next stage: " + latest.getStatus());
     }
 
     @Transactional
@@ -98,6 +108,9 @@ public class ContractService {
         latest.setRemarks(remarks);
         latest.setUpdatedAt(LocalDateTime.now());
         versionRepository.save(latest);
+
+        auditService.log("CONTRACT_APPROVED",
+                "Contract approved (ID: " + id + "). Status: " + latest.getStatus() + ". Remarks: " + remarks);
     }
 
     @Transactional
@@ -126,6 +139,8 @@ public class ContractService {
                     "Finance Rejected: " + remarks,
                     legalUser);
 
+            auditService.log("CONTRACT_REJECTED",
+                    "Contract rejected by Finance (ID: " + id + "). Remarks: " + remarks);
         } else if (currentStatus == ContractStatus.PENDING_CLIENT) {
             latest.setStatus(ContractStatus.REJECTED_BY_CLIENT);
             latest.setRemarks(remarks);
@@ -151,6 +166,9 @@ public class ContractService {
                     ContractStatus.REJECTED_BY_CLIENT,
                     "Client Rejected: " + remarks,
                     financeUser);
+
+            auditService.log("CONTRACT_REJECTED",
+                    "Contract rejected by Client (ID: " + id + "). Remarks: " + remarks);
         } else {
             throw new RuntimeException("Contract not in a state to be rejected");
         }
@@ -188,7 +206,10 @@ public class ContractService {
         contract.setEffectiveDate(request.getEffectiveDate());
         contract.setContractAmount(request.getContractAmount());
 
-        return contractRepository.save(contract);
+        Contract saved = contractRepository.save(contract);
+        auditService.log("CONTRACT_UPDATED",
+                "Contract updated (ID: " + id + ") in " + latest.getStatus() + " state.");
+        return saved;
     }
 
     @Transactional(readOnly = true)

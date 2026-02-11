@@ -35,12 +35,12 @@ public class ContractController {
     }
 
     @PutMapping("/{id}")
-    public Contract update(@PathVariable Long id, @Valid @RequestBody CreateContractRequest request) {
+    public Contract update(@PathVariable("id") Long id, @Valid @RequestBody CreateContractRequest request) {
         return service.update(id, request);
     }
 
     @PostMapping("/{id}/submit")
-    public ResponseEntity<?> submit(@PathVariable Long id, @AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<?> submit(@PathVariable("id") Long id, @AuthenticationPrincipal UserDetails userDetails) {
         User user = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         service.submit(id, user);
@@ -48,7 +48,8 @@ public class ContractController {
     }
 
     @PostMapping("/{id}/approve")
-    public ResponseEntity<?> approve(@PathVariable Long id, @RequestParam(required = false) String remarks,
+    public ResponseEntity<?> approve(@PathVariable("id") Long id,
+            @RequestParam(name = "remarks", required = false) String remarks,
             @AuthenticationPrincipal UserDetails userDetails) {
         User reviewer = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -57,7 +58,7 @@ public class ContractController {
     }
 
     @PostMapping("/{id}/reject")
-    public ResponseEntity<?> reject(@PathVariable Long id, @RequestParam String remarks,
+    public ResponseEntity<?> reject(@PathVariable("id") Long id, @RequestParam("remarks") String remarks,
             @AuthenticationPrincipal UserDetails userDetails) {
         User reviewer = userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));

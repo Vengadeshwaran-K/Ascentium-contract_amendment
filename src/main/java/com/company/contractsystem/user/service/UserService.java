@@ -5,6 +5,7 @@ import com.company.contractsystem.user.entity.Role;
 import com.company.contractsystem.user.entity.User;
 import com.company.contractsystem.user.repository.RoleRepository;
 import com.company.contractsystem.user.repository.UserRepository;
+import com.company.contractsystem.audit.service.AuditService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     public UserService(UserRepository userRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuditService auditService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditService = auditService;
     }
 
     public User createUser(CreateUserRequest request) {
@@ -40,7 +44,9 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.password));
         user.setRole(role);
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        auditService.log("USER_CREATED", "User created: " + savedUser.getUsername() + " with role " + role.getName());
+        return savedUser;
     }
 
     public List<User> getAllUsers() {

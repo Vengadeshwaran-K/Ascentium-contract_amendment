@@ -3,6 +3,7 @@ package com.company.contractsystem.approval.service;
 import com.company.contractsystem.approval.dto.CreateApprovalMappingRequest;
 import com.company.contractsystem.approval.entity.ApprovalMapping;
 import com.company.contractsystem.approval.repository.ApprovalMappingRepository;
+import com.company.contractsystem.audit.service.AuditService;
 import com.company.contractsystem.user.entity.User;
 import com.company.contractsystem.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -12,13 +13,15 @@ public class ApprovalMappingService {
 
     private final ApprovalMappingRepository mappingRepository;
     private final UserRepository userRepository;
+    private final AuditService auditService;
 
     public ApprovalMappingService(
             ApprovalMappingRepository mappingRepository,
-            UserRepository userRepository
-    ) {
+            UserRepository userRepository,
+            AuditService auditService) {
         this.mappingRepository = mappingRepository;
         this.userRepository = userRepository;
+        this.auditService = auditService;
     }
 
     /**
@@ -46,7 +49,12 @@ public class ApprovalMappingService {
         mapping.setFinanceUser(financeUser);
         mapping.setClientUser(clientUser);
 
-        return mappingRepository.save(mapping);
+        ApprovalMapping saved = mappingRepository.save(mapping);
+        auditService.log("WORKFLOW_MAPPING_CREATED",
+                String.format("Created approval chain: Legal(%s) -> Finance(%s) -> Client(%s)",
+                        legalUser.getUsername(), financeUser.getUsername(), clientUser.getUsername()));
+
+        return saved;
     }
 
     /**

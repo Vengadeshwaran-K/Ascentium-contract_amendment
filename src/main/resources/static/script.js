@@ -103,6 +103,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
             loadMyContracts();
         } else if (targetTab === 'all-contracts') {
             loadAllActiveContracts();
+        } else if (targetTab === 'audit-log') {
+            loadAuditLogs();
         }
 
         // Always refresh stats in background
@@ -291,7 +293,7 @@ function applyRoleBasedAccess() {
     console.log('Applying access for role:', role);
 
     // Default: Hide everything
-    const allTabs = ['tab-dashboard-overview', 'tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts', 'tab-all-contracts'];
+    const allTabs = ['tab-dashboard-overview', 'tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts', 'tab-all-contracts', 'tab-audit-log'];
 
     allTabs.forEach(id => {
         const el = document.getElementById(id);
@@ -308,6 +310,7 @@ function applyRoleBasedAccess() {
         show('tab-create-user');
         show('tab-user-mapping');
         show('tab-all-contracts');
+        show('tab-audit-log');
         defaultTab = 'tab-all-contracts';
     } else if (role === 'LEGAL_USER') {
         show('tab-create-contract');
@@ -672,3 +675,25 @@ function animateValue(id, start, end, duration) {
     };
     window.requestAnimationFrame(step);
 }
+
+async function loadAuditLogs() {
+    try {
+        const response = await authenticatedFetch(`${API_BASE}/api/admin/audit/logs`);
+        if (response.ok) {
+            const logs = await response.json();
+            const body = document.getElementById('audit-log-list-body');
+            body.innerHTML = logs.slice().reverse().map(log => `
+                <tr>
+                    <td>${new Date(log.timestamp).toLocaleString()}</td>
+                    <td><span class="status-badge darft" style="background: hsla(250, 95%, 65%, 0.1); color: var(--text-primary); border: 1px solid hsla(250, 95%, 65%, 0.2);">${log.action}</span></td>
+                    <td style="font-weight: 500;">${log.actor}</td>
+                    <td><small style="color: var(--text-tertiary)">${log.actorRole}</small></td>
+                    <td style="font-size: 0.85rem;">${log.remarks}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading audit logs:', error);
+    }
+}
+

@@ -67,6 +67,14 @@
                             </svg>
                             <span class="tab-text">User Mapping</span>
                         </button>
+                        <button class="tab-btn" data-tab="audit-log" id="tab-audit-log" style="display: none;">
+                            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M16 13l-4 4-2-2"></path>
+                            </svg>
+                            <span class="tab-text">Audit Log</span>
+                        </button>
                         <button class="tab-btn" data-tab="create-contract" id="tab-create-contract">
                             <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -112,6 +120,30 @@
                 </div>
 
                 <main class="content">
+                    <!-- Audit Log Tab -->
+                    <section id="audit-log" class="tab-content">
+                        <div class="card">
+                            <h2 class="card-title">System Audit Log</h2>
+                            <p class="card-description">Chronological trail of all system and contract actions.</p>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Timestamp</th>
+                                            <th>Action</th>
+                                            <th>Actor</th>
+                                            <th>Role</th>
+                                            <th>Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="audit-log-list-body">
+                                        <!-- Data populated by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- Create User Tab -->
                     <section id="create-user" class="tab-content">
                         <div class="card">
