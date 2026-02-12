@@ -1,14 +1,10 @@
-// API Base URL
 const API_BASE = '';
 
-// Authentication Check
 const authToken = localStorage.getItem('authToken');
 if (!authToken) {
-    // No token found, redirect to login
     window.location.href = '/login.html';
 }
 
-// Display username in header
 const username = localStorage.getItem('username');
 if (username) {
     document.addEventListener('DOMContentLoaded', () => {
@@ -19,7 +15,6 @@ if (username) {
     });
 }
 
-// Logout functionality
 document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
@@ -31,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Helper function to make authenticated API calls
 async function authenticatedFetch(url, options = {}) {
     const token = localStorage.getItem('authToken');
 
@@ -49,7 +43,6 @@ async function authenticatedFetch(url, options = {}) {
         headers
     });
 
-    // Handle 401 Unauthorized - token expired or invalid
     if (response.status === 401) {
         const errorText = await response.text();
         console.error('Unauthorized request:', url, 'Response:', errorText);
@@ -62,22 +55,18 @@ async function authenticatedFetch(url, options = {}) {
     return response;
 }
 
-// Tab Navigation
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         const targetTab = btn.dataset.tab;
 
-        // Update active tab button
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // Update active tab content
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
         document.getElementById(targetTab).classList.add('active');
 
-        // Load users when switching to mapping or contract tabs
         if (targetTab === 'user-mapping') {
             loadUsersForMapping();
         } else if (targetTab === 'create-contract') {
@@ -92,7 +81,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-// Toast Notification
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -103,7 +91,6 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// Create User Form
 document.getElementById('create-user-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -134,7 +121,6 @@ document.getElementById('create-user-form').addEventListener('submit', async (e)
     }
 });
 
-// Load Users for Mapping
 async function loadUsersForMapping() {
     try {
         const response = await authenticatedFetch(`${API_BASE}/admin/users`);
@@ -142,7 +128,6 @@ async function loadUsersForMapping() {
 
         const users = await response.json();
 
-        // Populate dropdowns
         populateUserDropdown('legal-user', users, 'LEGAL_USER');
         populateUserDropdown('finance-user', users, 'FINANCE_REVIEWER');
         populateUserDropdown('client-user', users, 'CLIENT');
@@ -155,10 +140,8 @@ function populateUserDropdown(selectId, users, roleFilter) {
     const select = document.getElementById(selectId);
     const currentValue = select.value;
 
-    // Clear existing options except the first one
     select.innerHTML = '<option value="">Select ' + roleFilter.replace('_', ' ') + '</option>';
 
-    // Filter users by role
     const filteredUsers = users.filter(user => user.role.name === roleFilter);
 
     filteredUsers.forEach(user => {
@@ -168,13 +151,11 @@ function populateUserDropdown(selectId, users, roleFilter) {
         select.appendChild(option);
     });
 
-    // Restore previous selection if it still exists
     if (currentValue) {
         select.value = currentValue;
     }
 }
 
-// User Mapping Form
 document.getElementById('user-mapping-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -203,7 +184,6 @@ document.getElementById('user-mapping-form').addEventListener('submit', async (e
     }
 });
 
-// Load Clients for Contract
 async function loadClientsForContract() {
     try {
         const response = await authenticatedFetch(`${API_BASE}/admin/users`);
@@ -211,7 +191,6 @@ async function loadClientsForContract() {
 
         const users = await response.json();
 
-        // Populate client dropdown
         const select = document.getElementById('client-id');
         select.innerHTML = '<option value="">Select Client</option>';
 
@@ -228,7 +207,6 @@ async function loadClientsForContract() {
     }
 }
 
-// Create Contract Form
 document.getElementById('create-contract-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -259,7 +237,6 @@ document.getElementById('create-contract-form').addEventListener('submit', async
     }
 });
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Contract Management Dashboard loaded');
     applyRoleBasedAccess();
@@ -269,7 +246,6 @@ function applyRoleBasedAccess() {
     const role = localStorage.getItem('role');
     console.log('Applying access for role:', role);
 
-    // Default: Hide everything
     const allTabs = ['tab-create-user', 'tab-user-mapping', 'tab-create-contract', 'tab-approval-queue', 'tab-view-contracts'];
     const allSections = ['create-user', 'user-mapping', 'create-contract', 'approval-queue', 'view-contracts'];
 
@@ -278,7 +254,6 @@ function applyRoleBasedAccess() {
         if (el) el.style.display = 'none';
     });
 
-    // Show based on role
     let defaultTab = '';
     if (role === 'SUPER_ADMIN') {
         show('tab-create-user');
@@ -295,7 +270,6 @@ function applyRoleBasedAccess() {
         defaultTab = 'tab-approval-queue';
     }
 
-    // Set default active tab if current one is hidden
     if (defaultTab) {
         document.getElementById(defaultTab).click();
     }
@@ -306,7 +280,6 @@ function show(id) {
     if (el) el.style.display = 'flex';
 }
 
-// Load Approval Queue
 async function loadApprovalQueue() {
     const listBody = document.getElementById('approval-queue-body');
     if (!listBody) return;
@@ -344,7 +317,6 @@ async function loadApprovalQueue() {
     }
 }
 
-// Load My Contracts
 async function loadMyContracts() {
     const listBody = document.getElementById('contracts-list-body');
     if (!listBody) return;
@@ -482,7 +454,6 @@ async function editContract(id, currentName, currentAmount, currentDate) {
     }
 }
 
-// Custom Modal Logic
 function showModal(title, inputs) {
     return new Promise((resolve) => {
         const modal = document.getElementById('custom-modal');
@@ -516,7 +487,6 @@ function showModal(title, inputs) {
 
         const closeModal = (result) => {
             modal.classList.remove('show');
-            // Remove listeners to avoid leaks
             btnOk.onclick = null;
             btnCancel.onclick = null;
             btnClose.onclick = null;
@@ -546,7 +516,6 @@ function showModal(title, inputs) {
     });
 }
 
-// Load All Active Contracts (Admin)
 async function loadAllActiveContracts() {
     const listBody = document.getElementById('all-contracts-list-body');
     if (!listBody) return;

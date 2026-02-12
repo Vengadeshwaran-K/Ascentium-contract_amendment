@@ -1,12 +1,9 @@
-// API Base URL
 const API_BASE = '';
 
-// Check if already logged in
 if (localStorage.getItem('authToken')) {
     window.location.href = '/dashboard.html';
 }
 
-// Login Form Handler
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -15,16 +12,13 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const errorMessage = document.getElementById('error-message');
     const loginBtn = document.getElementById('login-btn');
 
-    // Clear previous errors
     errorMessage.classList.remove('show');
 
-    // Validate inputs
     if (!username || !password) {
         showError('Please enter both username and password');
         return;
     }
 
-    // Show loading state
     loginBtn.disabled = true;
     loginBtn.classList.add('loading');
     loginBtn.textContent = '';
@@ -41,15 +35,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         if (response.ok) {
             const data = await response.json();
 
-            // Store token in localStorage
             localStorage.setItem('authToken', data.token);
             localStorage.setItem('username', username);
             localStorage.setItem('role', data.role);
 
-            // Redirect to dashboard
             window.location.href = '/dashboard.html';
         } else {
-            // Handle error responses
             let errorMsg = 'Invalid credentials. Please try again.';
 
             try {
@@ -58,7 +49,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
                     errorMsg = errorData;
                 }
             } catch (e) {
-                // Use default error message
             }
 
             showError(errorMsg);
@@ -83,7 +73,6 @@ function resetButton() {
     loginBtn.textContent = 'Sign In';
 }
 
-// Allow Enter key to submit
 document.getElementById('password').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         document.getElementById('login-form').dispatchEvent(new Event('submit'));

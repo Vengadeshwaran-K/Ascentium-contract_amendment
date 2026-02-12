@@ -21,10 +21,6 @@ public class ApprovalMappingService {
         this.userRepository = userRepository;
     }
 
-    /**
-     * SUPER ADMIN creates approval chain:
-     * Legal -> Finance -> Client
-     */
     public ApprovalMapping createMapping(CreateApprovalMappingRequest request) {
 
         User legalUser = userRepository.findById(request.getLegalUserId())
@@ -36,7 +32,6 @@ public class ApprovalMappingService {
         User clientUser = userRepository.findById(request.getClientUserId())
                 .orElseThrow(() -> new RuntimeException("Client user not found"));
 
-        // ❌ Prevent duplicate mapping for same legal user
         mappingRepository.findByLegalUser(legalUser).ifPresent(mapping -> {
             throw new RuntimeException("Mapping already exists for this legal user");
         });
@@ -49,17 +44,11 @@ public class ApprovalMappingService {
         return mappingRepository.save(mapping);
     }
 
-    /**
-     * Used later during Legal Submit
-     */
     public ApprovalMapping getByLegalUser(User legalUser) {
         return mappingRepository.findByLegalUser(legalUser)
                 .orElseThrow(() -> new RuntimeException("No approval mapping found for legal user"));
     }
 
-    /**
-     * Used later during Finance Approval
-     */
     public ApprovalMapping getByFinanceUser(User financeUser) {
         return mappingRepository.findByFinanceUser(financeUser)
                 .orElseThrow(() -> new RuntimeException("No approval mapping found for finance user"));

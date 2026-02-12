@@ -16,10 +16,6 @@ public class ApprovalMappingController {
         this.mappingService = mappingService;
     }
 
-    /**
-     * SUPER ADMIN API
-     * Maps Legal -> Finance -> Client
-     */
     @PostMapping
     public ApprovalMapping createMapping(
             @Valid @RequestBody CreateApprovalMappingRequest request
